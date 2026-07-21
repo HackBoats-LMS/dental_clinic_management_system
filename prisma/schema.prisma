@@ -1,0 +1,236 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+
+
+model Receptionist {
+  receptionistId String @id @default(uuid())
+  name String
+  email String
+  phone String
+  
+}
+
+model Recordings {
+  recordId String @id @default(uuid())
+  id  String  @unique
+  fileName  String
+  mimeType  String
+  driveLink String
+  date  String
+  phoneNumber String
+  Transcript  String
+
+}
+
+
+
+
+// enum Gender {
+//   MALE
+//   FEMALE
+//   OTHER
+// }
+
+// enum VisitStatus {
+//   SCHEDULED
+//   IN_PROGRESS
+//   COMPLETED
+//   CANCELLED
+// }
+
+// enum TreatmentStatus {
+//   PROPOSED
+//   ACCEPTED
+//   REJECTED
+//   COMPLETED
+// }
+
+// enum Complexity {
+//   LOW
+//   MEDIUM
+//   HARD
+// }
+
+// enum PaymentStatus {
+//   PENDING
+//   COMPLETED
+//   FAILED
+//   REFUNDED
+// }
+
+// enum PaymentPurpose {
+//   OP_REGISTRATION
+//   PROCEDURE_PAYMENT
+//   CONSULTATION
+//   OTHER
+// }
+
+// model Patient {
+//   patientId  String @id @default(uuid())
+//   name       String
+//   phone      String
+//   email      String
+//   dateOfBirth DateTime?
+//   gender     Gender?
+//   address    String?
+//   emergencyContact String?
+//   previousDentalHistory String?
+//   medicalConditions String?
+  
+//   op             Op[]
+//   payments       Payment[]
+//   treatmentPlans TreatmentPlan[]
+  
+//   createdAt DateTime @default(now())
+//   updateAt  DateTime @updatedAt
+// }
+
+// model Op {
+//   opId      Int @id @default(autoincrement())
+//   opNo      String @unique
+  
+//   patientId String
+//   patient   Patient @relation(fields: [patientId], references: [patientId])
+  
+//   receptionistId String?
+//   receptionist   Receptionist? @relation(fields: [receptionistId], references: [receptionistId])
+  
+//   visit     Visit[]
+//   payments  Payment[]
+  
+//   createdAt DateTime @default(now())
+//   expiresAt DateTime
+// }
+
+// model Visit {
+//   visitId   Int @id @default(autoincrement())
+  
+//   opId      Int
+//   op        Op @relation(fields: [opId], references: [opId])
+  
+//   doctorId  String
+//   doctor    Doctor @relation(fields: [doctorId], references: [doctorId])
+  
+//   visitDate DateTime @default(now())
+//   startTime DateTime?
+//   endTime   DateTime?
+//   tokenNo   Int
+
+//   status    VisitStatus @default(SCHEDULED)
+
+//   // Clinical records
+//   symptoms  Symptoms[]
+//   diagnosis String?
+//   notes     String?
+  
+//   // If this visit is a Session for a specific Treatment Plan
+//   treatmentPlanId Int?
+//   treatmentPlan   TreatmentPlan? @relation(fields: [treatmentPlanId], references: [planId])
+  
+//   payments  Payment[]
+// }
+
+// model Procedure {
+//   procedureId String      @id @default(uuid())
+//   name        String      
+//   complexity  Complexity      
+//   cost        Decimal     @db.Decimal(10,2)
+//   treatmentPlans TreatmentPlan[]
+// }
+
+// model TreatmentPlan {
+//   planId                Int       @id @default(autoincrement())
+  
+//   patientId             String
+//   patient               Patient   @relation(fields: [patientId], references: [patientId])
+  
+//   procedureId           String    
+//   procedure             Procedure @relation(fields: [procedureId], references: [procedureId])
+  
+//   status                TreatmentStatus @default(PROPOSED)
+//   totalSessionsPlanned  Int       @default(1)
+  
+//   sessions              Visit[]   
+  
+//   createdAt             DateTime  @default(now())
+//   updateAt              DateTime  @updatedAt
+// }
+
+// model Symptoms {
+//   symptomId Int @id @default(autoincrement())
+//   symptomName String
+//   createdAt DateTime @default(now())
+//   updateAt  DateTime @updatedAt
+//   visits    Visit[]
+// }
+
+// model Payment {
+//   paymentId      String   @id @default(uuid())
+  
+//   patientId      String
+//   patient        Patient  @relation(fields: [patientId], references: [patientId])
+  
+//   visitId        Int?
+//   visit          Visit?   @relation(fields: [visitId], references: [visitId])
+  
+//   opId           Int?
+//   op             Op?      @relation(fields: [opId], references: [opId])
+  
+//   receptionistId String?  
+//   receptionist   Receptionist? @relation(fields: [receptionistId], references: [receptionistId])
+  
+//   amount         Decimal  @db.Decimal(10,2)
+//   purpose        PaymentPurpose
+//   status         PaymentStatus @default(PENDING)
+  
+//   createdAt      DateTime @default(now())
+// }
+
+// model Receptionist {
+//   receptionistId String @id @default(uuid())
+//   name String
+//   email String
+//   phone String
+  
+//   ops     Op[]
+//   payments Payment[]
+// }
+
+// model Doctor {
+//   doctorId String @id @default(uuid())
+//   name String
+//   email String
+//   phone String
+  
+//   visits Visit[]
+// }
+
+model Admin {
+  adminId String @id @default(uuid())
+  name String
+  email String
+  phone String?
+}
+
+model CallList {
+  id String @id @default(uuid())
+  name String
+  phoneNumber String
+  status String @default("PENDING") // PENDING, CONTACTED, NOT_LIFTED, OTHER
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
