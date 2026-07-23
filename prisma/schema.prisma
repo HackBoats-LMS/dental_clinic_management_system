@@ -24,15 +24,16 @@ model Receptionist {
 }
 
 model Recordings {
-  recordId String @id @default(uuid())
-  id  String  @unique
-  fileName  String
-  mimeType  String
-  driveLink String
-  date  String
+  recordId    String  @id @default(uuid())
+  id          String  @unique
+  fileName    String
+  mimeType    String
+  driveLink   String
+  date        String
   phoneNumber String
-  Transcript  String
-
+  Transcript  String?
+  Summary     String?
+  Time        String?
 }
 
 

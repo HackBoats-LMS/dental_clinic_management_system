@@ -1,11 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function UploadRecordingsPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string>('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (sessionStatus === 'unauthenticated') {
+      router.push('/login');
+    } else if (sessionStatus === 'authenticated') {
+      if ((session?.user as any)?.role !== 'admin') {
+        router.push('/');
+      }
+    }
+  }, [sessionStatus, session, router]);
+
+  if (sessionStatus === 'loading') {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -59,7 +77,7 @@ export default function UploadRecordingsPage() {
           <p className="font-semibold mb-2">Instructions:</p>
           <p>Please ensure your Excel file has the following column headers exactly as written:</p>
           <code className="block mt-2 bg-white dark:bg-gray-900 p-2 rounded">
-            id | fileName | mimeType | driveLink | date | phoneNumber | Transcript
+            id | fileName | mimeType | driveLink | date | phoneNumber | Transcript | Summary | Time
           </code>
         </div>
 

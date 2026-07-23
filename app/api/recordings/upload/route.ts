@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import * as xlsx from 'xlsx';
 
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -55,7 +62,9 @@ export async function POST(request: Request) {
             driveLink: String(row.DriveLink || row.driveLink || ''),
             date: dateStr,
             phoneNumber: String(row.PhoneNumber || row.phoneNumber || ''),
-            Transcript: String(row.Transcript || ''),
+            Transcript: row.Transcript || row.transcript ? String(row.Transcript || row.transcript) : null,
+            Summary: row.Summary || row.summary ? String(row.Summary || row.summary) : null,
+            Time: row.Time || row.time ? String(row.Time || row.time) : null,
           }
         });
         successCount++;
