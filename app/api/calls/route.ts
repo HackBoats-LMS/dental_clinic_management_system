@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { name, phoneNumber, notes } = await req.json();
+  const { name, phoneNumber, notes, date } = await req.json();
 
   if (!name || !phoneNumber) {
     return NextResponse.json({ error: "Name and Phone Number are required" }, { status: 400 });
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       name,
       phoneNumber,
       notes: notes || "",
+      ...(date ? { createdAt: new Date(date) } : {}),
     }
   });
 
@@ -45,15 +46,19 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id, status } = await req.json();
+  const { id, status, notes } = await req.json();
 
-  if (!id || !status) {
-    return NextResponse.json({ error: "ID and Status are required" }, { status: 400 });
+  if (!id) {
+    return NextResponse.json({ error: "ID is required" }, { status: 400 });
   }
+
+  const dataToUpdate: any = {};
+  if (status !== undefined) dataToUpdate.status = status;
+  if (notes !== undefined) dataToUpdate.notes = notes;
 
   const updatedCall = await prisma.callList.update({
     where: { id },
-    data: { status }
+    data: dataToUpdate
   });
 
   return NextResponse.json(updatedCall);

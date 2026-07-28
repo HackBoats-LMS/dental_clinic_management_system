@@ -18,8 +18,11 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   const role = (session.user as any)?.role;
 
   const navLinks = [
-    { name: "Admin Dashboard", href: "/admin", show: role === "admin" },
-    { name: "Receptionist Dashboard", href: "/receptionist", show: role === "receptionist" || role === "admin" },
+    { name: "Summary", href: "/admin/summary", show: role === "admin" },
+    { name: "Recordings", href: "/admin/recordings", show: role === "admin" },
+    { name: "Control Panel", href: "/admin/control-panel", show: role === "admin" },
+    { name: "Today's Call List", href: "/receptionist/todays-calls", show: role === "receptionist" },
+    { name: "Add Calls", href: "/receptionist/add-calls", show: role === "receptionist" },
   ];
 
   return (
