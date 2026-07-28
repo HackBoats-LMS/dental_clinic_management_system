@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       name,
       phoneNumber,
       notes: notes || "",
-      ...(date ? { createdAt: new Date(date) } : {}),
+      ...(date ? { callDate: new Date(date) } : {}),
     }
   });
 
@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id, status, notes } = await req.json();
+  const { id, status, notes, callDate } = await req.json();
 
   if (!id) {
     return NextResponse.json({ error: "ID is required" }, { status: 400 });
@@ -55,6 +55,7 @@ export async function PATCH(req: NextRequest) {
   const dataToUpdate: any = {};
   if (status !== undefined) dataToUpdate.status = status;
   if (notes !== undefined) dataToUpdate.notes = notes;
+  if (callDate !== undefined) dataToUpdate.callDate = new Date(callDate);
 
   const updatedCall = await prisma.callList.update({
     where: { id },
@@ -62,4 +63,21 @@ export async function PATCH(req: NextRequest) {
   });
 
   return NextResponse.json(updatedCall);
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || ((session.user as any).role !== "receptionist" && (session.user as any).role !== "admin")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await req.json();
+
+  if (!id) {
+    return NextResponse.json({ error: "ID is required" }, { status: 400 });
+  }
+
+  await prisma.callList.delete({ where: { id } });
+
+  return NextResponse.json({ success: true });
 }

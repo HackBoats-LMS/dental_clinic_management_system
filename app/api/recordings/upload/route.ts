@@ -63,7 +63,11 @@ export async function POST(request: Request) {
             date: dateStr,
             phoneNumber: String(row.PhoneNumber || row.phoneNumber || ''),
             Transcript: row.Transcript || row.transcript ? String(row.Transcript || row.transcript) : null,
-            Summary: row.Summary || row.summary ? String(row.Summary || row.summary) : null,
+            callType: row.callType || row.CallType ? String(row.callType || row.CallType) : null,
+            purpose: row.purpose || row.Purpose ? String(row.purpose || row.Purpose) : null,
+            details: row.details || row.Details ? String(row.details || row.Details) : null,
+            outcome: row.outcome || row.Outcome ? String(row.outcome || row.Outcome) : null,
+            followUp: row.followUp || row.FollowUp ? String(row.followUp || row.FollowUp) : null,
             Time: row.Time || row.time ? String(row.Time || row.time) : null,
           }
         });
