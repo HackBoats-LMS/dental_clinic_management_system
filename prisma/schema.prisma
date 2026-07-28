@@ -12,15 +12,84 @@ datasource db {
   provider = "postgresql"
 }
 
-
-
+// Type of logins
+model Admin {
+  adminId String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name    String
+  email   String
+  phone   String?
+}
 
 model Receptionist {
-  receptionistId String @id @default(uuid())
-  name String
-  email String
-  phone String
-  
+  receptionistId String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  email          String
+  phone          String
+}
+
+// model patient{
+//   patientId String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   name String
+//   age Int
+//   gender String
+//   phoneNumber String
+//   email String?
+//   emergencyContact String?
+//   previousDentalHistory String?
+//   medicalConditions String?
+//   visits visit[]
+// }
+
+// model doctor{
+//   doctorId String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   name String
+//   age Int
+//   phoneNo String
+//   email String
+//   isPresent Boolean @default(false)
+//   visits visit[]
+
+// }
+// //-------------------------------------------------------------------//
+
+// // OP , visit---------------------------------------------------------------//
+
+// model op{
+//   opId String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   createdAt DateTime @default(now())
+//   expiresAt DateTime
+//   visits visit[]
+// }
+
+// model appointment{
+//   appointmentId String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   isVerified Boolean @default(false)
+// }
+
+// model visit{
+//   visitId String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   visitDate DateTime @default(now())
+//   tokenNumber Int
+//   doctorId String
+//   patientId String
+//   opId String
+//   op op @relation(fields: [opId], references: [opId])
+//   doctor doctor @relation(fields: [doctorId],references: [doctorId])
+//   patient patient @relation(fields: [patientId],references: [patientId])
+// }
+
+//-----------------------------------------------------------------------//
+
+// For the Call TRanscript and Summary--------------------------------//
+model CallList {
+  id          String   @id @default(uuid())
+  name        String
+  phoneNumber String
+  status      String   @default("PENDING") // PENDING, CONTACTED, NOT_LIFTED, OTHER
+  notes       String?
+  callDate    DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Recordings {
@@ -30,14 +99,14 @@ model Recordings {
   mimeType    String
   driveLink   String
   date        String
+  source      String?
   phoneNumber String
   Transcript  String?
   Summary     String?
   Time        String?
 }
 
-
-
+//------------------------------------------------------------------------------------------//
 
 // enum Gender {
 //   MALE
@@ -90,11 +159,11 @@ model Recordings {
 //   emergencyContact String?
 //   previousDentalHistory String?
 //   medicalConditions String?
-  
+
 //   op             Op[]
 //   payments       Payment[]
 //   treatmentPlans TreatmentPlan[]
-  
+
 //   createdAt DateTime @default(now())
 //   updateAt  DateTime @updatedAt
 // }
@@ -102,29 +171,29 @@ model Recordings {
 // model Op {
 //   opId      Int @id @default(autoincrement())
 //   opNo      String @unique
-  
+
 //   patientId String
 //   patient   Patient @relation(fields: [patientId], references: [patientId])
-  
+
 //   receptionistId String?
 //   receptionist   Receptionist? @relation(fields: [receptionistId], references: [receptionistId])
-  
+
 //   visit     Visit[]
 //   payments  Payment[]
-  
+
 //   createdAt DateTime @default(now())
 //   expiresAt DateTime
 // }
 
 // model Visit {
 //   visitId   Int @id @default(autoincrement())
-  
+
 //   opId      Int
 //   op        Op @relation(fields: [opId], references: [opId])
-  
+
 //   doctorId  String
 //   doctor    Doctor @relation(fields: [doctorId], references: [doctorId])
-  
+
 //   visitDate DateTime @default(now())
 //   startTime DateTime?
 //   endTime   DateTime?
@@ -136,11 +205,11 @@ model Recordings {
 //   symptoms  Symptoms[]
 //   diagnosis String?
 //   notes     String?
-  
+
 //   // If this visit is a Session for a specific Treatment Plan
 //   treatmentPlanId Int?
 //   treatmentPlan   TreatmentPlan? @relation(fields: [treatmentPlanId], references: [planId])
-  
+
 //   payments  Payment[]
 // }
 
@@ -154,18 +223,18 @@ model Recordings {
 
 // model TreatmentPlan {
 //   planId                Int       @id @default(autoincrement())
-  
+
 //   patientId             String
 //   patient               Patient   @relation(fields: [patientId], references: [patientId])
-  
+
 //   procedureId           String    
 //   procedure             Procedure @relation(fields: [procedureId], references: [procedureId])
-  
+
 //   status                TreatmentStatus @default(PROPOSED)
 //   totalSessionsPlanned  Int       @default(1)
-  
+
 //   sessions              Visit[]   
-  
+
 //   createdAt             DateTime  @default(now())
 //   updateAt              DateTime  @updatedAt
 // }
@@ -180,23 +249,23 @@ model Recordings {
 
 // model Payment {
 //   paymentId      String   @id @default(uuid())
-  
+
 //   patientId      String
 //   patient        Patient  @relation(fields: [patientId], references: [patientId])
-  
+
 //   visitId        Int?
 //   visit          Visit?   @relation(fields: [visitId], references: [visitId])
-  
+
 //   opId           Int?
 //   op             Op?      @relation(fields: [opId], references: [opId])
-  
+
 //   receptionistId String?  
 //   receptionist   Receptionist? @relation(fields: [receptionistId], references: [receptionistId])
-  
+
 //   amount         Decimal  @db.Decimal(10,2)
 //   purpose        PaymentPurpose
 //   status         PaymentStatus @default(PENDING)
-  
+
 //   createdAt      DateTime @default(now())
 // }
 
@@ -205,7 +274,7 @@ model Recordings {
 //   name String
 //   email String
 //   phone String
-  
+
 //   ops     Op[]
 //   payments Payment[]
 // }
@@ -215,23 +284,6 @@ model Recordings {
 //   name String
 //   email String
 //   phone String
-  
+
 //   visits Visit[]
 // }
-
-model Admin {
-  adminId String @id @default(uuid())
-  name String
-  email String
-  phone String?
-}
-
-model CallList {
-  id String @id @default(uuid())
-  name String
-  phoneNumber String
-  status String @default("PENDING") // PENDING, CONTACTED, NOT_LIFTED, OTHER
-  notes String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}

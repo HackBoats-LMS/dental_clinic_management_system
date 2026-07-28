@@ -81,7 +81,7 @@ function parseDateTimeForSort(dateStr: string, timeStr?: string | null) {
   return isNaN(parsedDate) ? 0 : parsedDate;
 }
 
-export default function RecordingsTable({ recordings, isDevelopment }: { recordings: Recording[], isDevelopment?: boolean }) {
+export default function RecordingsTable({ recordings, isDevelopment, viewMode = 'all' }: { recordings: Recording[], isDevelopment?: boolean, viewMode?: 'summary' | 'recordings' | 'all' }) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearch = useDeferredValue(searchQuery);
@@ -300,8 +300,15 @@ export default function RecordingsTable({ recordings, isDevelopment }: { recordi
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-3.5 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Phone & Time</th>
-                <th className="px-6 py-3.5 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Audio</th>
-                <th className="px-6 py-3.5 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Summary</th>
+                {viewMode !== 'summary' && (
+                  <th className="px-6 py-3.5 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Audio</th>
+                )}
+                {viewMode !== 'recordings' && (
+                  <th className="px-6 py-3.5 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Summary</th>
+                )}
+                {viewMode === 'recordings' && (
+                  <th className="px-6 py-3.5 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Transcript</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -329,45 +336,63 @@ export default function RecordingsTable({ recordings, isDevelopment }: { recordi
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        {rec.driveLink ? (
-                          <div className="flex items-center gap-2">
-                            {activeAudioId === rec.recordId ? (
-                              <audio controls autoPlay className="h-9 w-48 sm:w-56 outline-none rounded shadow-sm">
-                                <source src={`/api/recordings/${rec.recordId}/audio`} />
-                                <source src={getAudioStreamUrl(rec.driveLink) || ''} />
-                                <source src={getDownloadLink(rec.driveLink) || ''} />
-                              </audio>
-                            ) : (
-                              <button
-                                onClick={() => setActiveAudioId(rec.recordId)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all shadow-sm group-hover:bg-blue-100"
-                                title="Click to load and play audio"
-                              >
-                                <span>▶</span> Listen
-                              </button>
-                            )}
-                            <a href={rec.driveLink} target="_blank" rel="noopener noreferrer" title="Open in Google Drive" className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors rounded hover:bg-slate-100">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                            </a>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-400 italic px-2">No Audio</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 max-w-[320px] sm:max-w-md">
-                        <div className="truncate group-hover:text-slate-900 transition-colors text-sm font-medium" title="Click to view full details">
-                          {cleanSummaryText(rec.Summary) ? (
-                            <span>{cleanSummaryText(rec.Summary)}</span>
-                          ) : rec.Transcript ? (
-                            <span className="text-slate-500 font-normal">{rec.Transcript}</span>
+                      
+                      {viewMode !== 'summary' && (
+                        <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          {rec.driveLink ? (
+                            <div className="flex items-center gap-2">
+                              {activeAudioId === rec.recordId ? (
+                                <audio controls autoPlay className="h-9 w-48 sm:w-56 outline-none rounded shadow-sm">
+                                  <source src={`/api/recordings/${rec.recordId}/audio`} />
+                                  <source src={getAudioStreamUrl(rec.driveLink) || ''} />
+                                  <source src={getDownloadLink(rec.driveLink) || ''} />
+                                </audio>
+                              ) : (
+                                <button
+                                  onClick={() => setActiveAudioId(rec.recordId)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all shadow-sm group-hover:bg-blue-100"
+                                  title="Click to load and play audio"
+                                >
+                                  <span>▶</span> Listen
+                                </button>
+                              )}
+                              <a href={rec.driveLink} target="_blank" rel="noopener noreferrer" title="Open in Google Drive" className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors rounded hover:bg-slate-100">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
+                            </div>
                           ) : (
-                            <span className="italic text-slate-400">No summary available</span>
+                            <span className="text-xs text-slate-400 italic px-2">No Audio</span>
                           )}
-                        </div>
-                      </td>
+                        </td>
+                      )}
+                      
+                      {viewMode !== 'recordings' && (
+                        <td className="px-6 py-4 text-slate-600 max-w-[320px] sm:max-w-md">
+                          <div className="truncate group-hover:text-slate-900 transition-colors text-sm font-medium" title="Click to view full details">
+                            {cleanSummaryText(rec.Summary) ? (
+                              <span>{cleanSummaryText(rec.Summary)}</span>
+                            ) : rec.Transcript ? (
+                              <span className="text-slate-500 font-normal">{rec.Transcript}</span>
+                            ) : (
+                              <span className="italic text-slate-400">No summary available</span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+
+                      {viewMode === 'recordings' && (
+                        <td className="px-6 py-4 text-slate-600 max-w-[320px] sm:max-w-md">
+                          <div className="truncate group-hover:text-slate-900 transition-colors text-sm font-medium" title="Click to view full transcript">
+                            {rec.Transcript ? (
+                              <span className="text-slate-500 font-normal">{rec.Transcript}</span>
+                            ) : (
+                              <span className="italic text-slate-400">No transcript available</span>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </React.Fragment>
@@ -449,80 +474,86 @@ export default function RecordingsTable({ recordings, isDevelopment }: { recordi
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Audio Playback</label>
-                  {selectedRecording.driveLink && (
-                    <div className="flex items-center gap-3">
-                      <a href={getDownloadLink(selectedRecording.driveLink) || '#'} download className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 flex items-center gap-1">
-                        Download Audio
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                      </a>
-                      <a href={selectedRecording.driveLink} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                        Open in Drive
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
+              {viewMode !== 'summary' && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Audio Playback</label>
+                    {selectedRecording.driveLink && (
+                      <div className="flex items-center gap-3">
+                        <a href={getDownloadLink(selectedRecording.driveLink) || '#'} download className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 flex items-center gap-1">
+                          Download Audio
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </a>
+                        <a href={selectedRecording.driveLink} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                          Open in Drive
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                  {selectedRecording.driveLink ? (
+                    <div className="space-y-2">
+                      <audio controls className="w-full h-12 outline-none rounded-xl bg-slate-100 shadow-inner" autoPlay preload="metadata">
+                        <source src={`/api/recordings/${selectedRecording.recordId}/audio`} />
+                        <source src={getAudioStreamUrl(selectedRecording.driveLink) || ''} />
+                        <source src={getDownloadLink(selectedRecording.driveLink) || ''} />
+                        Your browser does not support the audio element.
+                      </audio>
+
+                      {extractDriveId(selectedRecording.driveLink) && (
+                        <details className="text-xs text-slate-500 mt-1">
+                          <summary className="cursor-pointer hover:text-slate-700 font-medium select-none flex items-center gap-1 py-1">
+                            <span>⚡</span> Having trouble playing? Use embedded Drive player
+                          </summary>
+                          <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 bg-black/90 shadow-md">
+                            <iframe 
+                              src={getDrivePreviewUrl(selectedRecording.driveLink) || ''} 
+                              width="100%" 
+                              height="280" 
+                              allow="autoplay"
+                              className="border-0 w-full"
+                            />
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-slate-50 rounded-xl text-sm text-slate-400 italic border border-slate-100">
+                      No audio file available for this recording.
                     </div>
                   )}
                 </div>
-                {selectedRecording.driveLink ? (
-                  <div className="space-y-2">
-                    <audio controls className="w-full h-12 outline-none rounded-xl bg-slate-100 shadow-inner" autoPlay preload="metadata">
-                      <source src={`/api/recordings/${selectedRecording.recordId}/audio`} />
-                      <source src={getAudioStreamUrl(selectedRecording.driveLink) || ''} />
-                      <source src={getDownloadLink(selectedRecording.driveLink) || ''} />
-                      Your browser does not support the audio element.
-                    </audio>
-
-                    {extractDriveId(selectedRecording.driveLink) && (
-                      <details className="text-xs text-slate-500 mt-1">
-                        <summary className="cursor-pointer hover:text-slate-700 font-medium select-none flex items-center gap-1 py-1">
-                          <span>⚡</span> Having trouble playing? Use embedded Drive player
-                        </summary>
-                        <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 bg-black/90 shadow-md">
-                          <iframe 
-                            src={getDrivePreviewUrl(selectedRecording.driveLink) || ''} 
-                            width="100%" 
-                            height="280" 
-                            allow="autoplay"
-                            className="border-0 w-full"
-                          />
-                        </div>
-                      </details>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-4 bg-slate-50 rounded-xl text-sm text-slate-400 italic border border-slate-100">
-                    No audio file available for this recording.
-                  </div>
-                )}
-              </div>
+              )}
 
               {/* Transcript Section */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="text-sm">📝</span>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Transcript</label>
+              {viewMode !== 'summary' && (
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-sm">📝</span>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Transcript</label>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-800 leading-relaxed font-sans max-h-52 overflow-y-auto whitespace-pre-wrap">
+                    {selectedRecording.Transcript || <span className="italic text-slate-400">No transcript provided.</span>}
+                  </div>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-800 leading-relaxed font-sans max-h-52 overflow-y-auto whitespace-pre-wrap">
-                  {selectedRecording.Transcript || <span className="italic text-slate-400">No transcript provided.</span>}
-                </div>
-              </div>
+              )}
 
-              {/* Summary Section (placed right after Transcript) */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="text-sm">💡</span>
-                  <label className="block text-xs font-semibold text-blue-600 uppercase tracking-wider">Summary</label>
+              {/* Summary Section */}
+              {viewMode !== 'recordings' && (
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-sm">💡</span>
+                    <label className="block text-xs font-semibold text-blue-600 uppercase tracking-wider">Summary</label>
+                  </div>
+                  <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-100 text-sm text-slate-800 leading-relaxed font-sans max-h-52 overflow-y-auto whitespace-pre-wrap">
+                    {cleanSummaryText(selectedRecording.Summary) || <span className="italic text-slate-400">No summary provided.</span>}
+                  </div>
                 </div>
-                <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-100 text-sm text-slate-800 leading-relaxed font-sans max-h-52 overflow-y-auto whitespace-pre-wrap">
-                  {cleanSummaryText(selectedRecording.Summary) || <span className="italic text-slate-400">No summary provided.</span>}
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex justify-end">

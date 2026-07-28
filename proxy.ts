@@ -10,7 +10,7 @@ export default withAuth(
       return NextResponse.redirect(new URL("/", req.url));
     }
 
-    if (path.startsWith("/receptionist") && token?.role !== "receptionist" && token?.role !== "admin") {
+    if (path.startsWith("/receptionist") && token?.role !== "receptionist") {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
