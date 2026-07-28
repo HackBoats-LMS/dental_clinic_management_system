@@ -373,10 +373,8 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
                           <div className="truncate group-hover:text-slate-900 transition-colors text-sm font-medium" title="Click to view full details">
                             {cleanSummaryText(rec.Summary) ? (
                               <span>{cleanSummaryText(rec.Summary)}</span>
-                            ) : rec.Transcript ? (
-                              <span className="text-slate-500 font-normal">{rec.Transcript}</span>
                             ) : (
-                              <span className="italic text-slate-400">No summary available</span>
+                              <span className="italic text-slate-400">No summary found</span>
                             )}
                           </div>
                         </td>

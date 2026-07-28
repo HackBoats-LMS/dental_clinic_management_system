@@ -98,12 +98,19 @@ model Recordings {
   fileName    String
   mimeType    String
   driveLink   String
+  Time        String?
   date        String
   source      String?
   phoneNumber String
   Transcript  String?
-  Summary     String?
-  Time        String?
+  callType    String?
+  purpose     String?
+  details     String?
+  outcome     String?
+  followUp    String?
+
+  // Summary     String?
+  
 }
 
 //------------------------------------------------------------------------------------------//
