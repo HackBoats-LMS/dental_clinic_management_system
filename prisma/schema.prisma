@@ -93,7 +93,7 @@ model CallList {
 }
 
 model Recordings {
-  recordId    String  @id @default(uuid())
+  recordId    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   id          String  @unique
   fileName    String
   mimeType    String
@@ -108,9 +108,7 @@ model Recordings {
   details     String?
   outcome     String?
   followUp    String?
-
-  // Summary     String?
-  
+  duration    Decimal?
 }
 
 //------------------------------------------------------------------------------------------//

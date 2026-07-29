@@ -15,6 +15,11 @@ export default async function SummaryPage() {
     orderBy: { date: 'desc' }
   });
 
+  const serializedRecordings = recordings.map(r => ({
+    ...r,
+    duration: r.duration ? Math.round(Number(r.duration)) : null
+  }));
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto w-full">
       <header className="mb-8">
@@ -23,7 +28,7 @@ export default async function SummaryPage() {
       </header>
 
       <main>
-        <RecordingsTable recordings={recordings} isDevelopment={process.env.NODE_ENV === 'development'} viewMode="summary" />
+        <RecordingsTable recordings={serializedRecordings} isDevelopment={process.env.NODE_ENV === 'development'} viewMode="summary" />
       </main>
     </div>
   );

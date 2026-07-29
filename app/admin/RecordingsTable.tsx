@@ -12,8 +12,14 @@ type Recording = {
   date: string;
   phoneNumber: string;
   Transcript?: string | null;
-  Summary?: string | null;
   Time?: string | null;
+  source?: string | null;
+  callType?: string | null;
+  details?: string | null;
+  followUp?: string | null;
+  outcome?: string | null;
+  purpose?: string | null;
+  duration?: any | null;
 };
 
 function extractDriveId(url: string) {
@@ -105,7 +111,7 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
     const total = recordings.length;
     const uniquePhones = new Set(recordings.map(r => r.phoneNumber)).size;
     const withTranscript = recordings.filter(r => r.Transcript && r.Transcript.trim().length > 0).length;
-    const withSummary = recordings.filter(r => r.Summary && r.Summary.trim().length > 0).length;
+    const withSummary = recordings.filter(r => (r.purpose && r.purpose.trim().length > 0) || (r.details && r.details.trim().length > 0)).length;
     return { total, uniquePhones, withTranscript, withSummary };
   }, [recordings]);
 
@@ -123,7 +129,9 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
         !query ||
         rec.phoneNumber.includes(query) || 
         (rec.Transcript && rec.Transcript.toLowerCase().includes(query)) ||
-        (rec.Summary && rec.Summary.toLowerCase().includes(query)) ||
+        (rec.details && rec.details.toLowerCase().includes(query)) ||
+        (rec.purpose && rec.purpose.toLowerCase().includes(query)) ||
+        (rec.outcome && rec.outcome.toLowerCase().includes(query)) ||
         (rec.Time && rec.Time.toLowerCase().includes(query));
       
       const matchesDate = dateFilter ? rec.date === dateFilter : true;
@@ -370,12 +378,21 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
                       
                       {viewMode !== 'recordings' && (
                         <td className="px-6 py-4 text-slate-600 max-w-[320px] sm:max-w-md">
-                          <div className="truncate group-hover:text-slate-900 transition-colors text-sm font-medium" title="Click to view full details">
-                            {cleanSummaryText(rec.Summary) ? (
-                              <span>{cleanSummaryText(rec.Summary)}</span>
-                            ) : (
-                              <span className="italic text-slate-400">No summary found</span>
-                            )}
+                          <div className="group-hover:text-slate-900 transition-colors text-sm font-medium relative max-h-32 overflow-hidden" title="Click to view full details">
+                            <div className="space-y-2 text-sm text-slate-800 pb-2">
+                              <div className="flex items-center gap-2 text-slate-600 font-medium">
+                                <span>📞 {rec.callType || 'Unknown Type'}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-slate-500 text-xs">
+                                <span>🕒 {rec.date}{rec.Time ? `, ${rec.Time}` : ''}</span>
+                                {rec.duration != null ? <span>· ⏱️ {Number(rec.duration)}s</span> : <span>· ⏱️ <span className="italic text-slate-400 font-normal">Not specified</span></span>}
+                              </div>
+                              <div><span className="font-semibold text-slate-700">Purpose:</span> {rec.purpose || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                              <div><span className="font-semibold text-slate-700">Details:</span> {rec.details || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                              <div><span className="font-semibold text-slate-700">Outcome:</span> {rec.outcome || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                              <div><span className="font-semibold text-slate-700">Follow-up:</span> {rec.followUp || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none group-hover:from-blue-50/60 transition-colors"></div>
                           </div>
                         </td>
                       )}
@@ -547,8 +564,20 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
                     <span className="text-sm">💡</span>
                     <label className="block text-xs font-semibold text-blue-600 uppercase tracking-wider">Summary</label>
                   </div>
-                  <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-100 text-sm text-slate-800 leading-relaxed font-sans max-h-52 overflow-y-auto whitespace-pre-wrap">
-                    {cleanSummaryText(selectedRecording.Summary) || <span className="italic text-slate-400">No summary provided.</span>}
+                  <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-100 text-sm text-slate-800 leading-relaxed font-sans max-h-72 overflow-y-auto whitespace-pre-wrap">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-blue-800 font-medium">
+                        <span>📞 {selectedRecording.callType || 'Unknown Type'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-blue-600 text-xs">
+                        <span>🕒 {selectedRecording.date}{selectedRecording.Time ? `, ${selectedRecording.Time}` : ''}</span>
+                        {selectedRecording.duration != null ? <span>· ⏱️ {Number(selectedRecording.duration)}s</span> : <span>· ⏱️ <span className="italic text-slate-400 font-normal">Not specified</span></span>}
+                      </div>
+                      <div><span className="font-semibold text-blue-900">Purpose:</span> {selectedRecording.purpose || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                      <div><span className="font-semibold text-blue-900">Details:</span> {selectedRecording.details || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                      <div><span className="font-semibold text-blue-900">Outcome:</span> {selectedRecording.outcome || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                      <div><span className="font-semibold text-blue-900">Follow-up:</span> {selectedRecording.followUp || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                    </div>
                   </div>
                 </div>
               )}
