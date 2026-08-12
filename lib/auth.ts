@@ -54,6 +54,7 @@ export const authOptions: NextAuthOptions = {
         if (patient) {
           token.role = "patient";
           token.id = patient.patientId;
+          token.profileComplete = patient.profileComplete;
         }
 
         const doctor = await prisma.doctor.findUnique({ where: { email } });

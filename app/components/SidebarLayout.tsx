@@ -79,8 +79,8 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
               </div>
             </div>
             <button
-              onClick={() => signOut({ callbackUrl: '/api/auth/signin' })}
-              className="w-full btn btn-outline justify-center text-sm"
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="w-full h-9 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-600 transition-colors flex items-center justify-center mt-2"
             >
               Log out
             </button>
