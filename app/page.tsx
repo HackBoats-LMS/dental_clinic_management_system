@@ -183,6 +183,7 @@ export default function Home() {
             alt="Dental Care Hero Background"
             fill
             priority
+            unoptimized
             className="object-contain md:object-cover object-right"
           />
         </div>
