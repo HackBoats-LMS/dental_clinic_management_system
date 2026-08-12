@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
@@ -56,7 +56,7 @@ const NavBar = () => {
           })}
         </nav>
 
-        {/* User Info */}
+        {/* User Info & Logout */}
         <div className="hidden md:flex items-center gap-4">
           <div className="text-right">
             <span className="text-xs text-slate-400 block">Signed in as</span>
@@ -64,6 +64,12 @@ const NavBar = () => {
               {session?.user?.name || session?.user?.email}
             </span>
           </div>
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="h-9 px-3.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-600 transition-colors"
+          >
+            Log out
+          </button>
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -102,8 +108,16 @@ const NavBar = () => {
               </Link>
             );
           })}
-          <div className="pt-3 border-t border-slate-100 text-xs text-slate-500">
-            Logged in as {session?.user?.name || session?.user?.email}
+          <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+            <span className="text-xs text-slate-500">
+              Logged in as {session?.user?.name || session?.user?.email}
+            </span>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="w-full h-9 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-600 transition-colors flex items-center justify-center"
+            >
+              Log out
+            </button>
           </div>
         </div>
       )}
