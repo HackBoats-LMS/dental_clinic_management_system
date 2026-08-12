@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 export default async function ReceptionistDashboard() {
   const session = await getServerSession(authOptions);
 
-  if (!session || (session.user as any).role !== "receptionist") {
+  if (!session || session.user.role !== "receptionist") {
     redirect("/api/auth/signin");
   }
   

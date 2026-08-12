@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions);
 
-  if (!session || (session.user as any).role !== "admin") {
+  if (!session || session.user.role !== "admin") {
     redirect("/api/auth/signin");
   }
   

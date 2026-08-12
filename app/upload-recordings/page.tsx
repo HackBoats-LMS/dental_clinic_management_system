@@ -15,7 +15,7 @@ export default function UploadRecordingsPage() {
     if (sessionStatus === 'unauthenticated') {
       router.push('/login');
     } else if (sessionStatus === 'authenticated') {
-      if ((session?.user as any)?.role !== 'admin') {
+      if (session?.user?.role !== 'admin') {
         router.push('/');
       }
     }

@@ -19,7 +19,7 @@ type Recording = {
   followUp?: string | null;
   outcome?: string | null;
   purpose?: string | null;
-  duration?: any | null;
+  duration?: number | null;
 };
 
 function extractDriveId(url: string) {
@@ -33,15 +33,6 @@ function getAudioStreamUrl(url: string) {
   const fileId = extractDriveId(url);
   if (fileId) {
     return `https://lh3.googleusercontent.com/d/${fileId}`;
-  }
-  return url;
-}
-
-function getAudioFallbackUrl(url: string) {
-  if (!url) return null;
-  const fileId = extractDriveId(url);
-  if (fileId) {
-    return `https://docs.google.com/uc?export=open&id=${fileId}`;
   }
   return url;
 }
@@ -67,7 +58,7 @@ function getDownloadLink(url: string) {
 function cleanSummaryText(text?: string | null) {
   if (!text) return '';
   // Remove raw <think>...</think> blocks if present
-  let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  const cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
   return cleaned;
 }
 
@@ -98,6 +89,9 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+
+  // Number of rendered columns varies with viewMode
+  const columnCount = 1 + (viewMode !== 'summary' ? 1 : 0) + (viewMode !== 'recordings' ? 1 : 0);
 
   // Parse and sort all recordings by date & time (newest first)
   const sortedRecordings = useMemo(() => {
@@ -187,7 +181,7 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
       if (!res.ok) throw new Error('Failed to delete recordings');
       alert("All recordings have been deleted.");
       router.refresh();
-    } catch (err) {
+    } catch {
       alert("Failed to delete recordings.");
     }
   };
@@ -324,7 +318,7 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
                 <React.Fragment key={dateKey}>
                   {/* Group Header */}
                   <tr className="bg-slate-100/90 border-y border-slate-200">
-                    <td colSpan={3} className="px-6 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    <td colSpan={columnCount} className="px-6 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
                       📅 Date: {dateKey}
                     </td>
                   </tr>
@@ -387,10 +381,10 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
                                 <span>🕒 {rec.date}{rec.Time ? `, ${rec.Time}` : ''}</span>
                                 {rec.duration != null ? <span>· ⏱️ {Number(rec.duration)}s</span> : <span>· ⏱️ <span className="italic text-slate-400 font-normal">Not specified</span></span>}
                               </div>
-                              <div><span className="font-semibold text-slate-700">Purpose:</span> {rec.purpose || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
-                              <div><span className="font-semibold text-slate-700">Details:</span> {rec.details || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
-                              <div><span className="font-semibold text-slate-700">Outcome:</span> {rec.outcome || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
-                              <div><span className="font-semibold text-slate-700">Follow-up:</span> {rec.followUp || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                              <div><span className="font-semibold text-slate-700">Purpose:</span> {cleanSummaryText(rec.purpose) || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                              <div><span className="font-semibold text-slate-700">Details:</span> {cleanSummaryText(rec.details) || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                              <div><span className="font-semibold text-slate-700">Outcome:</span> {cleanSummaryText(rec.outcome) || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                              <div><span className="font-semibold text-slate-700">Follow-up:</span> {cleanSummaryText(rec.followUp) || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
                             </div>
                             <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none group-hover:from-blue-50/60 transition-colors"></div>
                           </div>
@@ -415,7 +409,7 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
 
               {filteredRecordings.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-6 py-16 text-center text-slate-400">
+                  <td colSpan={columnCount} className="px-6 py-16 text-center text-slate-400">
                     <div className="text-3xl mb-2">🔍</div>
                     <p className="font-medium text-slate-600">No recordings found</p>
                     <p className="text-xs text-slate-400 mt-1">Try adjusting your search criteria or date filters.</p>
@@ -573,10 +567,10 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
                         <span>🕒 {selectedRecording.date}{selectedRecording.Time ? `, ${selectedRecording.Time}` : ''}</span>
                         {selectedRecording.duration != null ? <span>· ⏱️ {Number(selectedRecording.duration)}s</span> : <span>· ⏱️ <span className="italic text-slate-400 font-normal">Not specified</span></span>}
                       </div>
-                      <div><span className="font-semibold text-blue-900">Purpose:</span> {selectedRecording.purpose || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
-                      <div><span className="font-semibold text-blue-900">Details:</span> {selectedRecording.details || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
-                      <div><span className="font-semibold text-blue-900">Outcome:</span> {selectedRecording.outcome || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
-                      <div><span className="font-semibold text-blue-900">Follow-up:</span> {selectedRecording.followUp || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                      <div><span className="font-semibold text-blue-900">Purpose:</span> {cleanSummaryText(selectedRecording.purpose) || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                      <div><span className="font-semibold text-blue-900">Details:</span> {cleanSummaryText(selectedRecording.details) || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                      <div><span className="font-semibold text-blue-900">Outcome:</span> {cleanSummaryText(selectedRecording.outcome) || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
+                      <div><span className="font-semibold text-blue-900">Follow-up:</span> {cleanSummaryText(selectedRecording.followUp) || <span className="italic text-slate-400 font-normal">Not specified</span>}</div>
                     </div>
                   </div>
                 </div>

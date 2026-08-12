@@ -21,7 +21,7 @@ export default function UserManagement() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchUsers = async () => {
+  async function fetchUsers() {
     try {
       const res = await fetch("/api/users");
       if (res.ok) {
@@ -36,6 +36,7 @@ export default function UserManagement() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchUsers();
   }, []);
 
@@ -70,7 +71,7 @@ export default function UserManagement() {
         const data = await res.json();
         setError(data.error || "Failed to add user");
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
     } finally {
       setSubmitting(false);
@@ -148,6 +149,7 @@ export default function UserManagement() {
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white"
               >
                 <option value="receptionist">Receptionist</option>
+                <option value="doctor">Doctor</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
@@ -190,7 +192,7 @@ export default function UserManagement() {
               {filteredUsers.length === 0 && (
                 <tr>
                   <td colSpan={3} className="px-6 py-12 text-center text-slate-400">
-                    No users matching "{searchQuery}".
+                    No users matching &quot;{searchQuery}&quot;.
                   </td>
                 </tr>
               )}

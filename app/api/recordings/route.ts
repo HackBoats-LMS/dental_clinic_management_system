@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { Prisma } from '@/app/generated/prisma/client';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    const role = (session?.user as any)?.role;
+    const role = session?.user?.role;
 
     if (!session || (role !== 'admin' && role !== 'receptionist')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,24 +23,58 @@ export async function GET() {
   }
 }
 
+const CREATABLE_FIELDS = [
+  'fileName',
+  'mimeType',
+  'driveLink',
+  'date',
+  'phoneNumber',
+  'Transcript',
+  'Time',
+  'source',
+  'callType',
+  'details',
+  'followUp',
+  'outcome',
+  'purpose',
+  'duration',
+] as const;
+
 export async function POST(request: Request) {
   try {
     // Check session or API key for external webhook integrations
     const session = await getServerSession(authOptions);
-    const role = (session?.user as any)?.role;
+    const role = session?.user?.role;
 
     const apiKey = request.headers.get('x-api-key');
     const validApiKey = process.env.API_SECRET_KEY;
 
-    const isAuthorized = 
-      (role === 'admin') || 
+    const isAuthorized =
+      (role === 'admin') ||
       (validApiKey && apiKey === validApiKey);
 
     if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const data = await request.json();
+    const body = await request.json();
+
+    const data = {} as Prisma.RecordingsUncheckedCreateInput;
+    for (const field of CREATABLE_FIELDS) {
+      if (body[field] !== undefined) {
+        data[field] = body[field];
+      }
+    }
+
+    for (const field of ['fileName', 'mimeType', 'driveLink', 'phoneNumber', 'date'] as const) {
+      if (!data[field]) {
+        return NextResponse.json(
+          { error: `Missing required field: ${field}` },
+          { status: 400 }
+        );
+      }
+    }
+
     const recording = await prisma.recordings.create({
       data,
     });

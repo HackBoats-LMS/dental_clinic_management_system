@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -26,7 +26,7 @@
   --color-accent: var(--accent);
   --color-sidebar-bg: var(--sidebar-bg);
   --color-sidebar-fg: var(--sidebar-fg);
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --radius: var(--radius);
 }
 
@@ -97,4 +97,42 @@ th {
   border-radius: var(--radius);
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* HTML5 Qrcode Scanner Overrides */
+#reader {
+  border: none !important;
+  font-family: inherit !important;
+}
+#reader__scan_region {
+  background: #0f172a !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+#reader__scan_region video {
+  border-radius: 0.75rem !important;
+}
+#reader__dashboard_section_csr button {
+  background-color: #0d9488 !important; /* teal-600 */
+  color: #ffffff !important;
+  border: none !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  margin: 0.5rem !important;
+  transition: opacity 0.2s ease !important;
+}
+#reader__dashboard_section_csr button:hover {
+  opacity: 0.9 !important;
+}
+#reader__dashboard_section_csr select {
+  border: 1px solid #e5e7eb !important;
+  padding: 0.35rem 0.5rem !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.75rem !important;
+  background-color: #f9fafb !important;
+  outline: none !important;
 }

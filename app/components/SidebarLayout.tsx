@@ -10,12 +10,13 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // If not logged in, just return children without sidebar (e.g. for login page)
-  if (status === "unauthenticated" || !session) {
-    return <div className="min-h-screen bg-[var(--background)] flex flex-col">{children}</div>;
+  const isSidebarRoute = pathname.startsWith("/admin") || pathname.startsWith("/receptionist");
+
+  if (!isSidebarRoute || status === "unauthenticated" || !session) {
+    return <>{children}</>;
   }
 
-  const role = (session.user as any)?.role;
+  const role = session.user?.role;
 
   const navLinks = [
     { name: "Summary", href: "/admin/summary", show: role === "admin" },
@@ -23,13 +24,19 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
     { name: "Control Panel", href: "/admin/control-panel", show: role === "admin" },
     { name: "Today's Call List", href: "/receptionist/todays-calls", show: role === "receptionist" },
     { name: "Add Calls", href: "/receptionist/add-calls", show: role === "receptionist" },
+    { name: "OP Requests", href: "/receptionist/op-requests", show: role === "receptionist" },
+    { name: "Token Queue", href: "/receptionist/queue", show: role === "receptionist" || role === "admin" },
+    { name: "Walk-in & OP", href: "/receptionist/walk-in", show: role === "receptionist" },
+    { name: "Dashboard", href: "/patient", show: role === "patient" || !role },
+    { name: "Create OP", href: "/patient/create/op", show: role === "patient" || !role },
+    { name: "Family Members", href: "/patient/family", show: role === "patient" || !role },
   ];
 
   return (
     <div className="flex h-screen bg-[var(--background)] overflow-hidden">
       {/* Mobile sidebar backdrop */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-20 bg-black/50 md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
@@ -41,7 +48,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
           <div className="h-16 flex items-center px-6 border-b border-[var(--border)]">
             <span className="text-lg font-semibold tracking-tight text-[var(--foreground)]">Dental Clinic</span>
           </div>
-          
+
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navLinks.filter(link => link.show).map((link) => {
               const isActive = pathname === link.href;
@@ -50,11 +57,10 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
                   key={link.name}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive 
-                      ? "bg-[var(--primary)] text-[var(--primary-foreground)]" 
+                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
+                      ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
                       : "text-[var(--sidebar-fg)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
-                  }`}
+                    }`}
                 >
                   {link.name}
                 </Link>
@@ -72,7 +78,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
                 <p className="text-xs text-[var(--muted-foreground)] capitalize">{role}</p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => signOut({ callbackUrl: '/api/auth/signin' })}
               className="w-full btn btn-outline justify-center text-sm"
             >
@@ -87,7 +93,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
         {/* Top Header (Mobile Only for Hamburger) */}
         <header className="h-16 flex items-center justify-between px-4 border-b border-[var(--border)] bg-[var(--background)] md:hidden">
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setMobileMenuOpen(true)}
               className="p-2 -ml-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             >
