@@ -39,6 +39,7 @@ interface Doctor {
   email: string;
   phoneNo: string;
   isPresent: boolean;
+  isQueuePaused: boolean;
 }
 
 export default function DoctorDashboardPage() {
@@ -245,12 +246,12 @@ export default function DoctorDashboardPage() {
     if (waitingVisits.length === 0) return;
     setActionLoading(true);
     try {
-      // If someone is in consultation, complete them first
-      if (currentVisit) {
+      // If someone is actively in consultation, complete them first
+      if (activeConsultation) {
         await fetch("/api/doctor/consultation", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitId: currentVisit.visitId, action: "COMPLETE" }),
+          body: JSON.stringify({ visitId: activeConsultation.visitId, action: "COMPLETE" }),
         });
       }
       // Start the next waiting patient (first in line)
@@ -339,6 +340,20 @@ export default function DoctorDashboardPage() {
     }
   };
 
+  const toggleQueuePause = async () => {
+    if (!doctor) return;
+    try {
+      const res = await fetch("/api/doctor/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isQueuePaused: !doctor.isQueuePaused }),
+      });
+      if (res.ok) await refreshData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
@@ -368,8 +383,16 @@ export default function DoctorDashboardPage() {
 
   const statusOf = (v: Visit) => v.consultationStatus || "WAITING";
   const waitingVisits = visits.filter((v) => statusOf(v) === "WAITING");
-  const currentVisit = visits.find((v) => statusOf(v) === "IN_CONSULTATION");
+  const activeConsultation = visits.find((v) => statusOf(v) === "IN_CONSULTATION");
   const completedVisits = visits.filter((v) => statusOf(v) === "COMPLETED");
+  // When queue is paused and no one is actively consulting, show empty
+  const isQueuePaused = doctor?.isQueuePaused ?? false;
+  const currentVisit = activeConsultation
+    || (!isQueuePaused && waitingVisits.length > 0 ? waitingVisits[0] : null);
+  // For the "Prepare Next" section
+  const nextWaitingVisit = activeConsultation
+    ? (waitingVisits.length > 0 ? waitingVisits[0] : null)
+    : (!isQueuePaused && waitingVisits.length > 1 ? waitingVisits[1] : null);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
@@ -433,7 +456,7 @@ export default function DoctorDashboardPage() {
                 {doctor?.email} • {doctor?.phoneNo}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className="text-xs font-bold text-slate-600">Attendance:</span>
               <button
                 onClick={togglePresence}
@@ -445,6 +468,16 @@ export default function DoctorDashboardPage() {
               >
                 ● {doctor?.isPresent ? "Present (Active)" : "Absent (Inactive)"}
               </button>
+              <button
+                onClick={toggleQueuePause}
+                className={`h-9 px-4 rounded-xl text-xs font-bold transition-all border ${
+                  doctor?.isQueuePaused
+                    ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100 animate-pulse"
+                    : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                {doctor?.isQueuePaused ? "⏸ Queue Paused" : "⏸ Pause Queue"}
+              </button>
             </div>
           </div>
 
@@ -455,7 +488,7 @@ export default function DoctorDashboardPage() {
               <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Waiting</span>
             </div>
             <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 text-center">
-              <span className="text-2xl font-black text-teal-700 font-mono block">{currentVisit ? 1 : 0}</span>
+              <span className="text-2xl font-black text-teal-700 font-mono block">{activeConsultation ? 1 : 0}</span>
               <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider">In Consultation</span>
             </div>
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
@@ -464,14 +497,34 @@ export default function DoctorDashboardPage() {
             </div>
           </div>
 
+          {/* Queue Paused Banner */}
+          {isQueuePaused && !activeConsultation && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-2xs text-center space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-2xl">⏸</span>
+                <span className="text-sm font-bold text-red-800">Queue is Paused</span>
+              </div>
+              <p className="text-xs text-red-600/80">
+                The queue is paused — the display board and patient view will show no active token.
+                Resume the queue to continue calling patients.
+              </p>
+              <button
+                onClick={toggleQueuePause}
+                className="h-9 px-6 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all"
+              >
+                ▶ Resume Queue
+              </button>
+            </div>
+          )}
+
           {/* Now Consulting */}
           {currentVisit && (
-            <div className="bg-teal-50 border-2 border-teal-300 rounded-2xl p-6 shadow-2xs space-y-4">
+            <div className={`border-2 rounded-2xl p-6 shadow-2xs space-y-4 ${activeConsultation ? 'bg-teal-50 border-teal-300' : 'bg-amber-50 border-amber-300'}`}>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold tracking-wider text-teal-800 uppercase">
-                  Now Consulting
+                <span className={`text-xs font-bold tracking-wider uppercase ${activeConsultation ? 'text-teal-800' : 'text-amber-800'}`}>
+                  {activeConsultation ? 'Now Consulting' : 'Next Up — Ready to Start'}
                 </span>
-                <span className="text-2xl font-black text-teal-900 font-mono">
+                <span className={`text-2xl font-black font-mono ${activeConsultation ? 'text-teal-900' : 'text-amber-900'}`}>
                   #{currentVisit.tokenNumber}
                 </span>
               </div>
@@ -489,77 +542,95 @@ export default function DoctorDashboardPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handlePauseConsultation(currentVisit.visitId)}
-                    disabled={actionLoading}
-                    className="h-10 px-4 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
-                  >
-                    ⏸ Pause
-                  </button>
-                  <button
-                    onClick={() => {
-                      initFormFromVisit(currentVisit);
-                      setSelectedVisit(currentVisit);
-                      setIsConsultationMode(true);
-                    }}
-                    className="h-10 px-4 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold transition-all"
-                  >
-                    ✏️ Consult
-                  </button>
+                  {activeConsultation ? (
+                    <>
+                      <button
+                        onClick={() => handlePauseConsultation(currentVisit.visitId)}
+                        disabled={actionLoading}
+                        className="h-10 px-4 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                      >
+                        ⏸ Pause
+                      </button>
+                      <button
+                        onClick={() => {
+                          initFormFromVisit(currentVisit);
+                          setSelectedVisit(currentVisit);
+                          setIsConsultationMode(true);
+                        }}
+                        className="h-10 px-4 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold transition-all"
+                      >
+                        ✏️ Consult
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => handleStartConsultation(currentVisit.visitId)}
+                      disabled={actionLoading}
+                      className="h-10 px-4 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                    >
+                      ▶ Start Consultation
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
           {/* Waiting Queue */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-800">
-                Waiting Queue ({waitingVisits.length})
-              </h3>
-              <span className="text-[10px] text-slate-400">Auto-refresh active</span>
-            </div>
+          {(() => {
+            // If no one is actively consulting, the first waiting is already shown in the "Now Consulting" card
+            const displayedWaiting = activeConsultation ? waitingVisits : waitingVisits.slice(1);
+            return (
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-800">
+                  Waiting Queue ({displayedWaiting.length})
+                </h3>
+                <span className="text-[10px] text-slate-400">Auto-refresh active</span>
+              </div>
 
-            {waitingVisits.length === 0 ? (
-              <div className="py-12 text-center text-xs text-slate-500 space-y-2">
-                <p>No patients waiting in queue.</p>
-                <p className="text-[10px] text-slate-400">
-                  Patients appear here after QR verification at reception.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {waitingVisits.map((visit, idx) => {
-                  const patientName = visit.familyMember?.name || visit.patient.name;
-                  return (
-                    <div
-                      key={visit.visitId}
-                      className="flex items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center text-sm font-black font-mono">
-                          #{visit.tokenNumber}
-                        </span>
-                        <div>
-                          <p className="text-sm font-bold text-slate-900">{patientName}</p>
-                          <p className="text-[10px] text-slate-400">
-                            {idx === 0 ? "Next in line" : `#${idx + 1} in queue`}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleStartConsultation(visit.visitId)}
-                        disabled={actionLoading || !!currentVisit}
-                        className="h-9 px-4 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40"
+              {displayedWaiting.length === 0 ? (
+                <div className="py-12 text-center text-xs text-slate-500 space-y-2">
+                  <p>No patients waiting in queue.</p>
+                  <p className="text-[10px] text-slate-400">
+                    Patients appear here after QR verification at reception.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {displayedWaiting.map((visit, idx) => {
+                    const patientName = visit.familyMember?.name || visit.patient.name;
+                    return (
+                      <div
+                        key={visit.visitId}
+                        className="flex items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
                       >
-                        Start Consultation
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                        <div className="flex items-center gap-3">
+                          <span className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center text-sm font-black font-mono">
+                            #{visit.tokenNumber}
+                          </span>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{patientName}</p>
+                            <p className="text-[10px] text-slate-400">
+                              {idx === 0 ? "Next in line" : `#${idx + 1} in queue`}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleStartConsultation(visit.visitId)}
+                          disabled={actionLoading || !!activeConsultation}
+                          className="h-9 px-4 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-40"
+                        >
+                          Start Consultation
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            );
+          })()}
 
           {/* Completed */}
           {completedVisits.length > 0 && (
@@ -605,15 +676,15 @@ export default function DoctorDashboardPage() {
         {/* Right Section: Live Queue Console */}
         <section className="lg:col-span-4 space-y-6">
           {/* Now Consulting */}
-          <div className="bg-teal-50 border border-teal-200 rounded-2xl p-6 shadow-2xs text-center space-y-3">
-            <span className="text-[10px] font-bold tracking-wider text-teal-800 uppercase block">
-              Now Consulting
+          <div className={`border rounded-2xl p-6 shadow-2xs text-center space-y-3 ${activeConsultation ? 'bg-teal-50 border-teal-200' : currentVisit ? 'bg-amber-50 border-amber-200' : 'bg-teal-50 border-teal-200'}`}>
+            <span className={`text-[10px] font-bold tracking-wider uppercase block ${activeConsultation ? 'text-teal-800' : currentVisit ? 'text-amber-800' : 'text-teal-800'}`}>
+              {activeConsultation ? 'Now Consulting' : currentVisit ? 'Next Up' : 'Now Consulting'}
             </span>
-            <span className="text-5xl font-black text-teal-900 font-mono tracking-tight block leading-none">
+            <span className={`text-5xl font-black font-mono tracking-tight block leading-none ${activeConsultation ? 'text-teal-900' : currentVisit ? 'text-amber-900' : 'text-teal-900'}`}>
               {currentVisit ? `#${currentVisit.tokenNumber}` : "—"}
             </span>
             {currentVisit && (
-              <p className="text-xs font-semibold text-teal-800">
+              <p className={`text-xs font-semibold ${activeConsultation ? 'text-teal-800' : 'text-amber-800'}`}>
                 {currentVisit.familyMember?.name || currentVisit.patient.name}
               </p>
             )}
@@ -625,11 +696,11 @@ export default function DoctorDashboardPage() {
               Prepare Next
             </span>
             <span className="text-3xl font-black text-amber-900 font-mono tracking-tight block leading-none">
-              {waitingVisits.length > 0 ? `#${waitingVisits[0].tokenNumber}` : "—"}
+              {nextWaitingVisit ? `#${nextWaitingVisit.tokenNumber}` : "—"}
             </span>
-            {waitingVisits.length > 0 && (
+            {nextWaitingVisit && (
               <p className="text-xs font-semibold text-amber-800">
-                {waitingVisits[0].familyMember?.name || waitingVisits[0].patient.name}
+                {nextWaitingVisit.familyMember?.name || nextWaitingVisit.patient.name}
               </p>
             )}
           </div>
@@ -668,7 +739,7 @@ export default function DoctorDashboardPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">In Consultation</span>
-                <span className="font-bold text-teal-700">{currentVisit ? 1 : 0}</span>
+                <span className="font-bold text-teal-700">{activeConsultation ? 1 : 0}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Completed</span>

@@ -10,9 +10,10 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // If not logged in, on landing page, patient routes, board page, or doctor portal, render children without admin sidebar
-  if (status === "unauthenticated" || !session || pathname === "/" || pathname.startsWith("/patient") || pathname.startsWith("/board") || pathname.startsWith("/doctor")) {
-    return <div className="min-h-screen bg-slate-50 flex flex-col">{children}</div>;
+  const isSidebarRoute = pathname.startsWith("/admin") || pathname.startsWith("/receptionist");
+
+  if (!isSidebarRoute || status === "unauthenticated" || !session) {
+    return <>{children}</>;
   }
 
   const role = session.user?.role;

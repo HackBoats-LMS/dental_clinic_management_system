@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import NavBar from "../../../components/NavBar";
@@ -31,6 +31,12 @@ export default function VerifyVisitPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [assignedToken, setAssignedToken] = useState<number | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+
+  const scannerRef = useRef<import("html5-qrcode").Html5Qrcode | null>(null);
+  const scannerMountedRef = useRef(false);
+  const hasScannedRef = useRef(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -70,45 +76,110 @@ export default function VerifyVisitPage() {
     }
   }, [status, visitId]);
 
-  useEffect(() => {
-    let scanner: import("html5-qrcode").Html5QrcodeScanner | null = null;
-
-    if (activeTab === "QR" && !assignedToken && visit && !visit.isVerified) {
-      import("html5-qrcode")
-        .then((lib) => {
-          const Html5QrcodeScanner = lib.Html5QrcodeScanner;
-          scanner = new Html5QrcodeScanner(
-            "reader",
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 250 },
-              rememberLastUsedCamera: true,
-            },
-            false
-          );
-
-          scanner.render(
-            (decodedText: string) => {
-              if (scanner) {
-                scanner.clear().catch(() => console.error("Failed to clear scanner"));
-              }
-              verifyCode(decodedText);
-            },
-            () => {}
-          );
-        })
-        .catch((err) => {
-          console.error("Failed to load html5-qrcode library", err);
-        });
-    }
-
-    return () => {
-      if (scanner) {
-        scanner.clear().catch(() => console.error("Failed to clean up scanner"));
+  const stopScanner = useCallback(async () => {
+    if (scannerRef.current) {
+      try {
+        const state = scannerRef.current.getState();
+        // State 2 = SCANNING, State 3 = PAUSED
+        if (state === 2 || state === 3) {
+          await scannerRef.current.stop();
+        }
+      } catch {
+        // Ignore stop errors
       }
+      try {
+        scannerRef.current.clear();
+      } catch {
+        // Ignore clear errors
+      }
+      scannerRef.current = null;
+    }
+    scannerMountedRef.current = false;
+  }, []);
+
+  const startScanner = useCallback(async () => {
+    // Prevent double-mounting
+    if (scannerMountedRef.current) return;
+    scannerMountedRef.current = true;
+    hasScannedRef.current = false;
+    setCameraReady(false);
+    setCameraError("");
+
+    try {
+      const lib = await import("html5-qrcode");
+      const Html5Qrcode = lib.Html5Qrcode;
+
+      // Clean up any previous instance
+      if (scannerRef.current) {
+        try {
+          const state = scannerRef.current.getState();
+          if (state === 2 || state === 3) await scannerRef.current.stop();
+          scannerRef.current.clear();
+        } catch { /* ignore */ }
+      }
+
+      const scanner = new Html5Qrcode("qr-reader", /* verbose */ false);
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" }, // Always use back camera
+        {
+          fps: 15,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          // Prevent multiple scans
+          if (hasScannedRef.current) return;
+          hasScannedRef.current = true;
+
+          // Stop the scanner immediately after successful scan
+          scanner.stop().then(() => {
+            scanner.clear();
+            scannerRef.current = null;
+            scannerMountedRef.current = false;
+          }).catch(() => {});
+
+          verifyCode(decodedText);
+        },
+        () => {
+          // QR scan error callback (frame with no QR) - ignore
+        }
+      );
+
+      setCameraReady(true);
+    } catch (err) {
+      console.error("Camera error:", err);
+      scannerMountedRef.current = false;
+      setCameraError(
+        err instanceof Error && err.message.includes("NotAllowedError")
+          ? "Camera permission denied. Please allow camera access and try again."
+          : "Could not start camera. Please use the manual code entry."
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "QR" && !assignedToken && visit && !visit.isVerified) {
+      // Small delay to ensure the DOM element exists
+      const timeout = setTimeout(() => {
+        startScanner();
+      }, 100);
+      return () => {
+        clearTimeout(timeout);
+        stopScanner();
+      };
+    } else {
+      stopScanner();
+    }
+  }, [activeTab, assignedToken, visit, startScanner, stopScanner]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopScanner();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, assignedToken, visit]);
+  }, [stopScanner]);
 
   async function verifyCode(codeToSubmit: string) {
     setError("");
@@ -247,7 +318,7 @@ export default function VerifyVisitPage() {
                         : "text-slate-500 hover:text-slate-900"
                     }`}
                   >
-                    Scan QR Code
+                    📷 Scan QR Code
                   </button>
                   <button
                     onClick={() => setActiveTab("CODE")}
@@ -257,21 +328,58 @@ export default function VerifyVisitPage() {
                         : "text-slate-500 hover:text-slate-900"
                     }`}
                   >
-                    Enter Code Manually
+                    ⌨ Enter Code
                   </button>
                 </div>
 
                 {activeTab === "QR" ? (
                   /* QR Scanner View */
-                  <div className="space-y-5 text-center">
-                    <div className="border border-slate-200 rounded-2xl bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden p-4">
-                      {/* Render scanner container */}
-                      <div id="reader" className="w-full max-w-[320px] mx-auto rounded-lg overflow-hidden bg-slate-900 border border-slate-800"></div>
-                      
-                      <p className="text-[10px] text-slate-400 max-w-[250px] mx-auto leading-relaxed mt-4">
-                        Scan the clinic&apos;s check-in QR code using your device&apos;s camera.
-                      </p>
+                  <div className="space-y-4 text-center">
+                    <div className="border border-slate-200 rounded-2xl bg-slate-950 overflow-hidden relative">
+                      {/* Camera loading state */}
+                      {!cameraReady && !cameraError && (
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950 gap-3">
+                          <div className="w-8 h-8 rounded-full border-2 border-teal-400 border-t-transparent animate-spin"></div>
+                          <p className="text-xs text-slate-400">Starting camera...</p>
+                        </div>
+                      )}
+
+                      {/* Camera error state */}
+                      {cameraError && (
+                        <div className="p-8 text-center space-y-3">
+                          <div className="text-3xl">📷</div>
+                          <p className="text-xs text-red-400">{cameraError}</p>
+                          <button
+                            onClick={() => {
+                              stopScanner().then(() => startScanner());
+                            }}
+                            className="h-9 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                          >
+                            Retry Camera
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Scanner container - Html5Qrcode renders video directly here */}
+                      <div
+                        id="qr-reader"
+                        className="w-full"
+                        style={{ minHeight: cameraError ? 0 : 300 }}
+                      ></div>
                     </div>
+
+                    {cameraReady && (
+                      <p className="text-[10px] text-slate-400 max-w-[280px] mx-auto leading-relaxed">
+                        Point your camera at the clinic&apos;s QR code on the display board. It will scan automatically.
+                      </p>
+                    )}
+
+                    {verifying && (
+                      <div className="flex items-center justify-center gap-2 text-teal-700">
+                        <div className="w-4 h-4 rounded-full border-2 border-teal-600 border-t-transparent animate-spin"></div>
+                        <span className="text-xs font-semibold">Verifying code...</span>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   /* Manual Code Input */

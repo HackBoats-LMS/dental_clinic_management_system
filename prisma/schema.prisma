@@ -105,6 +105,7 @@ model doctor {
   phoneNo   String
   email     String @unique
   isPresent Boolean @default(false)
+  isQueuePaused Boolean @default(false)
   currentToken Int @default(0)
 
   op     op[]

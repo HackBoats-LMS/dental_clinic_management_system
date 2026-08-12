@@ -8,7 +8,7 @@ function LoginContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams?.get("callbackUrl") || "/";
+  const callbackUrl = searchParams?.get("callbackUrl");
 
   useEffect(() => {
     if (status === "authenticated" && session) {
@@ -27,8 +27,10 @@ function LoginContent() {
         } else {
           router.push("/patient");
         }
-      } else {
+      } else if (callbackUrl) {
         router.push(callbackUrl);
+      } else {
+        router.push("/");
       }
     }
   }, [status, session, router, callbackUrl]);
@@ -105,7 +107,7 @@ function LoginContent() {
           {/* Login Actions */}
           <div className="space-y-6">
             <button
-              onClick={() => signIn("google", { callbackUrl })}
+              onClick={() => signIn("google", callbackUrl ? { callbackUrl } : undefined)}
               className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-700 hover:bg-[#FAF9F6] hover:border-[#065268]/30 font-semibold h-12 rounded-xl transition-all shadow-sm text-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

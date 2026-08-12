@@ -3,6 +3,7 @@
 import React, { useState, useSyncExternalStore, useRef } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -174,17 +175,20 @@ export default function Home() {
       </nav>
 
       {/* 2. Hero Section */}
-      <header
-        className="relative w-full"
-        style={{
-          backgroundImage: 'url(/images/hero-aligner.png)',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right center',
-          backgroundSize: '50% auto',
-        }}
-      >
+      <header className="relative w-full overflow-hidden">
+        {/* Next.js optimized background image */}
+        <div className="absolute inset-y-0 right-0 w-full sm:w-1/2 z-0 pointer-events-none">
+          <Image
+            src="/images/hero-aligner.png"
+            alt="Dental Care Hero Background"
+            fill
+            priority
+            className="object-contain md:object-cover object-right"
+          />
+        </div>
+
         {/* Soft left-edge fade so text area stays readable */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent pointer-events-none z-0" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10">
           <div className="py-16 sm:py-20 md:py-28 lg:py-32 max-w-xl">

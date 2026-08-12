@@ -83,20 +83,28 @@ export async function POST(req: NextRequest) {
 
     const doctorId = session.user.id as string;
     const body = await req.json();
-    const { isPresent } = body;
+    const { isPresent, isQueuePaused } = body;
 
-    if (isPresent === undefined) {
-      return NextResponse.json({ error: "isPresent value is required" }, { status: 400 });
+    if (isPresent === undefined && isQueuePaused === undefined) {
+      return NextResponse.json({ error: "isPresent or isQueuePaused value is required" }, { status: 400 });
     }
+
+    const data: Record<string, boolean> = {};
+    if (isPresent !== undefined) data.isPresent = isPresent;
+    if (isQueuePaused !== undefined) data.isQueuePaused = isQueuePaused;
 
     const updatedDoctor = await prisma.doctor.update({
       where: { doctorId },
-      data: { isPresent },
+      data,
     });
+
+    // Broadcast queue update so the board reflects pause/resume
+    const { broadcast } = await import("@/lib/eventBus");
+    broadcast({ type: "QUEUE_UPDATE", doctorId });
 
     return NextResponse.json(updatedDoctor);
   } catch (error) {
-    console.error("Error updating doctor presence:", error);
+    console.error("Error updating doctor status:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

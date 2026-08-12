@@ -7,6 +7,7 @@ interface DoctorQueue {
   doctorId: string;
   name: string;
   isPresent: boolean;
+  isQueuePaused: boolean;
   currentToken: number;
   nextToken: number | null;
   totalVerified: number;
@@ -183,6 +184,11 @@ export default function ClinicBoardPage() {
                     <span className="text-[10px] bg-slate-900 border border-slate-800 text-slate-400 px-2 py-0.5 rounded-full">
                       {doc.completedCount}/{doc.totalVerified} completed
                     </span>
+                    {doc.isQueuePaused && (
+                      <span className="text-[10px] bg-red-500/10 border border-red-500/20 text-red-400 px-2 py-0.5 rounded-full animate-pulse">
+                        ⏸ Queue Paused
+                      </span>
+                    )}
                   </div>
 
                   {/* Token Status Board */}
@@ -192,8 +198,13 @@ export default function ClinicBoardPage() {
                         Now Consulting
                       </span>
                       <span className="text-4xl sm:text-5xl font-black text-teal-400 font-mono tracking-tight mt-1.5 block leading-none">
-                        {doc.currentToken > 0 ? `#${doc.currentToken}` : "—"}
+                        {doc.isQueuePaused
+                          ? (doc.currentToken > 0 ? `#${doc.currentToken}` : "—")
+                          : (doc.currentToken > 0 ? `#${doc.currentToken}` : "—")}
                       </span>
+                      {doc.isQueuePaused && !doc.currentToken && (
+                        <span className="text-[9px] text-slate-500 mt-1 block">Paused</span>
+                      )}
                     </div>
 
                     <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-4 text-center">
