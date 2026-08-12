@@ -35,7 +35,7 @@ export default function AddCallsPage() {
     }
   }, [sessionStatus]);
 
-  const fetchCalls = async () => {
+  async function fetchCalls() {
     try {
       const res = await fetch("/api/calls");
       if (res.ok) {
@@ -45,14 +45,14 @@ export default function AddCallsPage() {
     } catch (error) {
       console.error("Failed to fetch calls", error);
     }
-  };
+  }
 
   if (sessionStatus === "unauthenticated") {
     router.push("/api/auth/signin");
     return null;
   }
 
-  if (sessionStatus === "authenticated" && (session?.user as any)?.role !== "receptionist") {
+  if (sessionStatus === "authenticated" && session?.user?.role !== "receptionist") {
     router.push("/");
     return null;
   }

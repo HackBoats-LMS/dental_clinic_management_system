@@ -14,6 +14,15 @@ type Call = {
   createdAt: string;
 };
 
+// callDate is stored as UTC midnight of the intended calendar day, so read the
+// date back using UTC components to avoid timezone drift in the filter/display.
+function formatDateInput(d: Date): string {
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export default function TodaysCallsPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
@@ -25,7 +34,7 @@ export default function TodaysCallsPage() {
     if (sessionStatus === "unauthenticated") {
       router.push("/api/auth/signin");
     } else if (sessionStatus === "authenticated") {
-      if ((session?.user as any)?.role !== "receptionist") {
+      if (session?.user?.role !== "receptionist") {
         router.push("/");
       } else {
         fetchCalls();
@@ -33,7 +42,7 @@ export default function TodaysCallsPage() {
     }
   }, [sessionStatus, session, router]);
 
-  const fetchCalls = async () => {
+  async function fetchCalls() {
     try {
       const res = await fetch("/api/calls");
       if (res.ok) {
@@ -45,7 +54,7 @@ export default function TodaysCallsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     setCalls(calls.map(c => c.id === id ? { ...c, status: newStatus } : c));
@@ -104,14 +113,14 @@ export default function TodaysCallsPage() {
   }
 
   const filteredCalls = calls.filter(call =>
-    new Date(call.callDate || call.createdAt).toLocaleDateString('en-CA') === selectedDate
+    formatDateInput(new Date(call.callDate || call.createdAt)) === selectedDate
   );
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto w-full">
       <header className="mb-8 md:mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[var(--foreground)]">Today's Call List</h1>
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[var(--foreground)]">Today&apos;s Call List</h1>
           <p className="text-[var(--muted-foreground)] mt-1 md:mt-2 text-sm md:text-base">
             {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
@@ -155,7 +164,7 @@ export default function TodaysCallsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="date"
-                      value={new Date(call.callDate || call.createdAt).toLocaleDateString('en-CA')}
+                      value={formatDateInput(new Date(call.callDate || call.createdAt))}
                       onChange={(e) => handleDateChange(call.id, e.target.value)}
                       className="px-2 py-1 text-xs border border-[var(--border)] rounded bg-transparent outline-none focus:ring-1 focus:ring-[var(--primary)] text-[var(--muted-foreground)]"
                     />

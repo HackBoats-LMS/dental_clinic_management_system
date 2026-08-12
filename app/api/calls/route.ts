@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || ((session.user as any).role !== "receptionist" && (session.user as any).role !== "admin")) {
+  if (!session || (session.user.role !== "receptionist" && session.user.role !== "admin")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -18,7 +18,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || ((session.user as any).role !== "receptionist" && (session.user as any).role !== "admin")) {
+  if (!session || (session.user.role !== "receptionist" && session.user.role !== "admin")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || ((session.user as any).role !== "receptionist" && (session.user as any).role !== "admin")) {
+  if (!session || (session.user.role !== "receptionist" && session.user.role !== "admin")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "ID is required" }, { status: 400 });
   }
 
-  const dataToUpdate: any = {};
+  const dataToUpdate: { status?: string; notes?: string; callDate?: Date } = {};
   if (status !== undefined) dataToUpdate.status = status;
   if (notes !== undefined) dataToUpdate.notes = notes;
   if (callDate !== undefined) dataToUpdate.callDate = new Date(callDate);
@@ -67,7 +67,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || ((session.user as any).role !== "receptionist" && (session.user as any).role !== "admin")) {
+  if (!session || (session.user.role !== "receptionist" && session.user.role !== "admin")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

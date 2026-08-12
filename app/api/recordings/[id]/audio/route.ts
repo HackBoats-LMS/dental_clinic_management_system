@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 function extractDriveId(url: string) {
@@ -12,6 +14,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    const role = session?.user?.role;
+    if (!session || (role !== 'admin' && role !== 'receptionist')) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const { id } = await params;
     const recording = await prisma.recordings.findUnique({
       where: { recordId: id },
@@ -63,11 +71,11 @@ export async function GET(
 
     const contentType = driveRes.headers.get('content-type') || 'audio/mp4';
 
-    return new NextResponse(driveRes.body as any, {
+    return new NextResponse(driveRes.body, {
       headers: {
         'Content-Type': contentType.includes('text/html') ? 'audio/mp4' : contentType,
         'Content-Disposition': 'inline',
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'private, no-store',
       },
     });
   } catch (error) {

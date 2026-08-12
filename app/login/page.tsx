@@ -11,64 +11,102 @@ function LoginContent() {
   const callbackUrl = searchParams?.get("callbackUrl") || "/";
 
   useEffect(() => {
-    if (status === "authenticated") {
-      router.push(callbackUrl);
+    if (status === "authenticated" && session) {
+      const role = session.user?.role;
+      const profileComplete = session.user?.profileComplete;
+
+      if (role === "admin") {
+        router.push("/admin");
+      } else if (role === "receptionist") {
+        router.push("/receptionist");
+      } else if (role === "doctor") {
+        router.push("/doctor");
+      } else if (role === "patient") {
+        if (!profileComplete) {
+          router.push("/patient/completeProfile");
+        } else {
+          router.push("/patient");
+        }
+      } else {
+        router.push(callbackUrl);
+      }
     }
-  }, [status, router, callbackUrl]);
+  }, [status, session, router, callbackUrl]);
+
 
   if (status === "loading") {
     return <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] p-4">
-      <div className="w-full max-w-4xl grid md:grid-cols-2 bg-white border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden">
-        
-        {/* Left Side: Branding / Info */}
-        <div className="bg-[var(--primary)] text-white p-10 flex flex-col justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-4">Dental Clinic Management</h1>
-            <p className="text-gray-300">
-              Streamline your daily operations. Log in to access your personalized dashboard.
-            </p>
-          </div>
-          <div className="mt-12">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-white">Receptionists</h3>
-                <p className="text-sm text-gray-300">Manage calls, appointments, and patient flow.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.95 11.95 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-white">Administrators</h3>
-                <p className="text-sm text-gray-300">Review recordings, transcripts, and system settings.</p>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen flex text-slate-800 font-sans selection:bg-[#065268] selection:text-white">
+      {/* Left Side: Visual / Branding */}
+      <div className="hidden lg:flex w-1/2 relative bg-slate-50 border-r border-slate-100 items-end p-12">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/clinic-interior.png"
+            alt="Clinic Interior"
+            className="w-full h-full object-cover"
+          />
+          {/* Overlay to ensure text readability if needed */}
+          <div className="absolute inset-0 bg-[#065268]/20 mix-blend-multiply" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#065268]/90 via-[#065268]/40 to-transparent" />
         </div>
 
-        {/* Right Side: Login Actions */}
-        <div className="p-10 flex flex-col justify-center bg-white">
-          <div className="max-w-xs mx-auto w-full text-center">
-            <h2 className="text-2xl font-bold text-[var(--foreground)] mb-2">Welcome Back</h2>
-            <p className="text-[var(--muted-foreground)] mb-8">
+        {/* Branding content over image */}
+        <div className="relative z-10 w-full max-w-lg">
+          <span className="text-[10px] font-black tracking-widest text-white/80 uppercase block mb-3">
+            KOTHAMAS DENTAL CARE
+          </span>
+          <h2 className="text-4xl md:text-5xl font-light tracking-tight text-white leading-[1.1] mb-4">
+            Excellence in <br />
+            <span className="font-semibold">Every Detail</span>
+          </h2>
+          <p className="text-white/80 font-light text-sm md:text-base leading-relaxed">
+            Log in to manage appointments, access patient records, and streamline your clinic's daily operations.
+          </p>
+        </div>
+      </div>
+
+      {/* Right Side: Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative">
+        <div className="w-full max-w-sm space-y-10">
+          
+          {/* Logo Component */}
+          <div className="flex items-center gap-3 group mx-auto w-fit lg:mx-0">
+            <div className="w-10 h-10 rounded-full bg-[#EBF5F3] flex items-center justify-center text-[#065268] shadow-sm">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 21a9 9 0 0 1 0-18c2 0 3 1 4 3.5 1 2.5 1.5 4 1.5 5.5 0 2-1 3.5-2.5 4.5C14 17.5 13 21 12 21z" />
+                <path d="M12 3c-2 0-3 1-4 3.5-1 2.5-1.5 4-1.5 5.5 0 2 1 3.5 2.5 4.5C10 17.5 11 21 12 21" />
+              </svg>
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="text-xl font-bold tracking-[0.15em] text-[#065268] uppercase leading-none">
+                KOTHAMAS
+              </span>
+              <span className="text-[10px] font-bold tracking-[0.25em] text-[#065268]/70 uppercase leading-tight pt-1">
+                Dental Care
+              </span>
+            </div>
+          </div>
+
+          {/* Welcome Text */}
+          <div className="text-center lg:text-left space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-slate-900">
+              Welcome Back
+            </h1>
+            <p className="text-sm text-slate-500 font-light">
               Sign in with your authorized Google account to continue.
             </p>
+          </div>
 
-            <button 
+          {/* Login Actions */}
+          <div className="space-y-6">
+            <button
               onClick={() => signIn("google", { callbackUrl })}
-              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-black font-semibold py-3 px-4 rounded-lg transition-all shadow-sm"
+              className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-700 hover:bg-[#FAF9F6] hover:border-[#065268]/30 font-semibold h-12 rounded-xl transition-all shadow-sm text-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -79,11 +117,12 @@ function LoginContent() {
               </svg>
               Continue with Google
             </button>
-
-            <div className="mt-8 text-sm text-[var(--muted-foreground)]">
-              Your role will be automatically determined based on your email address.
-            </div>
+            
+            <p className="text-xs text-slate-400 font-light text-center lg:text-left">
+              Your role will be automatically determined based on your email address. New patients will be directed to create a profile.
+            </p>
           </div>
+          
         </div>
       </div>
     </div>

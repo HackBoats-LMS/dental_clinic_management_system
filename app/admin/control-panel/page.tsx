@@ -6,7 +6,7 @@ import UserManagement from "../UserManagement";
 export default async function ControlPanelPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session || (session.user as any).role !== "admin") {
+  if (!session || session.user.role !== "admin") {
     redirect("/api/auth/signin");
   }
 

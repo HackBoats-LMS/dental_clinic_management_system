@@ -7,7 +7,7 @@ import RecordingsTable from "../RecordingsTable";
 export default async function RecordingsPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session || (session.user as any).role !== "admin") {
+  if (!session || session.user.role !== "admin") {
     redirect("/api/auth/signin");
   }
 
