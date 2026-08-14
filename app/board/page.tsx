@@ -57,20 +57,30 @@ export default function ClinicBoardPage() {
 
     void load();
 
-    const eventSource = new EventSource("/api/request/stream");
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data?.type === "QUEUE_UPDATE") void load();
-      } catch {
-        // Ignore
-      }
+    let eventSource: EventSource;
+
+    const connectSSE = () => {
+      eventSource = new EventSource("/api/request/stream");
+      eventSource.onmessage = (event) => {
+        try {
+          if (event.data === "ping" || event.data === "connected") return;
+          const data = JSON.parse(event.data);
+          if (data?.type === "QUEUE_UPDATE") void load();
+        } catch {
+          // Ignore parse errors for non-JSON events
+        }
+      };
+      eventSource.onerror = () => {
+        eventSource.close();
+        setTimeout(connectSSE, 5000); // Reconnect after 5s
+      };
     };
-    eventSource.onerror = () => {};
+
+    connectSSE();
 
     return () => {
       controller.abort();
-      eventSource.close();
+      if (eventSource) eventSource.close();
     };
   }, []);
 

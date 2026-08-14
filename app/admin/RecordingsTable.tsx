@@ -344,7 +344,31 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
                           {rec.driveLink ? (
                             <div className="flex items-center gap-2">
                               {activeAudioId === rec.recordId ? (
-                                <audio controls autoPlay className="h-9 w-48 sm:w-56 outline-none rounded shadow-sm">
+                                <audio 
+                                  controls 
+                                  autoPlay 
+                                  crossOrigin="anonymous"
+                                  className="h-9 w-48 sm:w-56 outline-none rounded shadow-sm"
+                                  ref={(el) => { 
+                                    if (el && !el.dataset.boosted) {
+                                      el.dataset.boosted = "true";
+                                      el.volume = 1.0;
+                                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                                      if (!isMobile) {
+                                        try {
+                                          const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                                          const ctx = new AudioContext();
+                                          const src = ctx.createMediaElementSource(el);
+                                          const gain = ctx.createGain();
+                                          gain.gain.value = 3.0; // 300% volume boost
+                                          src.connect(gain);
+                                          gain.connect(ctx.destination);
+                                          el.addEventListener('play', () => { if (ctx.state === 'suspended') ctx.resume(); });
+                                        } catch (e) { console.error("Audio boost failed", e); }
+                                      }
+                                    } 
+                                  }}
+                                >
                                   <source src={`/api/recordings/${rec.recordId}/audio`} />
                                   <source src={getAudioStreamUrl(rec.driveLink) || ''} />
                                   <source src={getDownloadLink(rec.driveLink) || ''} />
@@ -506,7 +530,31 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
                   </div>
                   {selectedRecording.driveLink ? (
                     <div className="space-y-2">
-                      <audio controls className="w-full h-12 outline-none rounded-xl bg-slate-100 shadow-inner" autoPlay preload="metadata">
+                      <audio 
+                        controls 
+                        crossOrigin="anonymous"
+                        className="w-full h-12 outline-none rounded-xl bg-slate-100 shadow-inner" 
+                        preload="metadata"
+                        ref={(el) => { 
+                          if (el && !el.dataset.boosted) {
+                            el.dataset.boosted = "true";
+                            el.volume = 1.0;
+                            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                            if (!isMobile) {
+                              try {
+                                const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                                const ctx = new AudioContext();
+                                const src = ctx.createMediaElementSource(el);
+                                const gain = ctx.createGain();
+                                gain.gain.value = 3.0; // 300% volume boost
+                                src.connect(gain);
+                                gain.connect(ctx.destination);
+                                el.addEventListener('play', () => { if (ctx.state === 'suspended') ctx.resume(); });
+                              } catch (e) { console.error("Audio boost failed", e); }
+                            }
+                          } 
+                        }}
+                      >
                         <source src={`/api/recordings/${selectedRecording.recordId}/audio`} />
                         <source src={getAudioStreamUrl(selectedRecording.driveLink) || ''} />
                         <source src={getDownloadLink(selectedRecording.driveLink) || ''} />

@@ -130,10 +130,11 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { planId, totalSessions, status } = body as {
+    const { planId, totalSessions, status, selectedProcedure } = body as {
       planId: string;
       totalSessions?: number;
       status?: string;
+      selectedProcedure?: string;
     };
 
     if (!planId) {
@@ -143,6 +144,7 @@ export async function PATCH(req: NextRequest) {
     const data: Record<string, unknown> = {};
     if (totalSessions !== undefined) data.totalSessions = totalSessions;
     if (status !== undefined) data.status = status;
+    if (selectedProcedure !== undefined) data.selectedProcedure = selectedProcedure;
 
     const plan = await prisma.treatmentPlan.update({
       where: { id: planId },

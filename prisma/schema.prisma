@@ -129,6 +129,8 @@ model op {
   doctor    doctor  @relation(fields: [doctorId], references: [doctorId])
 
   visits visit[]
+
+  @@index([patientId, expiresAt])
 }
 
 enum RequestStatus {
@@ -155,6 +157,10 @@ model request {
   approvedById   String?       @db.Uuid
   approvedBy     Receptionist? @relation(fields: [approvedById], references: [receptionistId])
   approvedAt     DateTime?
+
+  @@index([status])
+  @@index([patientId])
+  @@index([status, createdAt])
 }
 
 model appointment {
@@ -184,6 +190,11 @@ model visit {
   consultationStatus String @default("WAITING") // WAITING, IN_CONSULTATION, COMPLETED
 
   treatmentPlan treatmentPlan?
+
+  @@index([visitDate])
+  @@index([isVerified])
+  @@index([doctorId])
+  @@index([visitDate, doctorId])
 }
 
 model PredefinedProblem {
@@ -211,6 +222,8 @@ model treatmentPlan {
   updatedAt         DateTime @updatedAt
 
   sessions          treatmentSession[]
+
+  @@index([status])
 }
 
 model treatmentSession {
@@ -225,6 +238,10 @@ model treatmentSession {
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([scheduledDate, status])
 }
 
 model doctorSchedule {
@@ -241,4 +258,20 @@ model doctorSchedule {
   createdAt    DateTime @default(now())
 
   @@unique([doctorId, dayOfWeek])
+}
+
+// ─── Materialized Views ───────────────────────────────────────────────────────
+
+model receptionist_queue_mv {
+  visitId       String   @id @db.Uuid
+  tokenNumber   Int
+  visitDate     DateTime
+  doctorId      String   @db.Uuid
+  doctorName    String
+  isPresent     Boolean
+  currentToken  Int
+  patientName   String
+  phoneNumber   String?
+  
+  @@map("receptionist_queue_mv")
 }

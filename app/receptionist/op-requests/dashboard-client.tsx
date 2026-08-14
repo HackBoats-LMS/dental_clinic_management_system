@@ -26,8 +26,8 @@ export default function ReceptionistDashboard({
 
     es.onmessage = (event) => {
       try {
+        if (event.data === "connected" || event.data === "ping") return;
         const msg = JSON.parse(event.data);
-        if (msg === "connected") return;
 
         if (msg.type === "new-request") {
           setRequests((prev) => {

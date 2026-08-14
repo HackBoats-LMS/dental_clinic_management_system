@@ -23,12 +23,12 @@ export default async function RecordingsPage() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto w-full">
       <header className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[var(--foreground)]">Recordings & Transcripts</h1>
-        <p className="text-[var(--muted-foreground)] mt-1 md:mt-2 text-sm md:text-base">View audio and full transcripts of clinic recordings.</p>
+        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[var(--foreground)]">Call Summaries & Recordings</h1>
+        <p className="text-[var(--muted-foreground)] mt-1 md:mt-2 text-sm md:text-base">View summaries, audio files, and full transcripts of clinic recordings.</p>
       </header>
 
       <main>
-        <RecordingsTable recordings={serializedRecordings} isDevelopment={process.env.NODE_ENV === 'development'} viewMode="recordings" />
+        <RecordingsTable recordings={serializedRecordings} isDevelopment={process.env.NODE_ENV === 'development'} viewMode="all" />
       </main>
     </div>
   );

@@ -48,44 +48,20 @@ export default function TreatmentPlanClient({
   const [plan, setPlan] = useState<TreatmentPlanData | null>(existingPlan);
 
   // Form state
-  const [selectedProcedure, setSelectedProcedure] = useState(existingPlan?.selectedProcedure || "");
+  const [selectedProcedure, setSelectedProcedure] = useState(existingPlan?.selectedProcedure || (visit.procedures?.length > 0 ? visit.procedures[0] : ""));
   const [totalSessions, setTotalSessions] = useState(existingPlan?.totalSessions || 1);
   const [firstSessionDate, setFirstSessionDate] = useState("");
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
   const [loadingDates, setLoadingDates] = useState(false);
 
   const [creating, setCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(false);
   const [addingSession, setAddingSession] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Fetch available dates when procedure is selected
-  useEffect(() => {
-    if (!selectedProcedure || !visit.doctor.doctorId) return;
-
-    const fetchAvailability = async () => {
-      setLoadingDates(true);
-      try {
-        const startDate = new Date().toISOString().split("T")[0];
-        const endDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0];
-        const res = await fetch(
-          `/api/receptionist/doctor-availability?doctorId=${visit.doctor.doctorId}&startDate=${startDate}&endDate=${endDate}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setAvailableDates(data.availableDates);
-        }
-      } catch (err) {
-        console.error("Failed to fetch availability", err);
-      } finally {
-        setLoadingDates(false);
-      }
-    };
-
-    void fetchAvailability();
-  }, [selectedProcedure, visit.doctor.doctorId]);
+  // Fetching availability removed as per requirement - receptionist selects manually
 
   const handleCreatePlan = async () => {
     if (!selectedProcedure || !totalSessions) {
@@ -120,6 +96,38 @@ export default function TreatmentPlanClient({
       setError(err instanceof Error ? err.message : "Failed to create plan");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleEditPlan = async () => {
+    if (!plan || !selectedProcedure || !totalSessions) return;
+    setEditingPlan(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const res = await fetch("/api/receptionist/treatment-plan", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planId: plan.id,
+          selectedProcedure,
+          totalSessions,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update treatment plan");
+      }
+
+      setPlan(data.plan);
+      setSuccess("Treatment plan updated successfully!");
+      setIsEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update plan");
+    } finally {
+      setEditingPlan(false);
     }
   };
 
@@ -348,42 +356,14 @@ export default function TreatmentPlanClient({
             {selectedProcedure && (
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                  First Session Date {loadingDates && "(Loading availability...)"}
+                  First Session Date
                 </label>
-                {availableDates.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {availableDates.slice(0, 12).map((d) => {
-                      const date = new Date(d.date);
-                      const isSelected = firstSessionDate === d.date;
-                      return (
-                        <button
-                          key={d.date}
-                          type="button"
-                          onClick={() => setFirstSessionDate(d.date)}
-                          className={`p-3 rounded-xl border text-left transition-all ${
-                            isSelected
-                              ? "bg-teal-50 border-teal-300"
-                              : "bg-white border-slate-200 hover:bg-slate-50"
-                          }`}
-                        >
-                          <p className="text-xs font-bold text-slate-800">
-                            {DAY_NAMES[date.getDay()]} {date.getDate()}
-                          </p>
-                          <p className="text-[10px] text-slate-500">
-                            {date.toLocaleDateString("en-GB", { month: "short" })} ·{" "}
-                            {d.startTime}–{d.endTime}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  !loadingDates && (
-                    <p className="text-xs text-slate-400 italic">
-                      No available dates found for this doctor in the next 60 days.
-                    </p>
-                  )
-                )}
+                <input
+                  type="date"
+                  value={firstSessionDate}
+                  onChange={(e) => setFirstSessionDate(e.target.value)}
+                  className="w-full h-11 px-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-400 outline-none"
+                />
                 <p className="text-[10px] text-slate-400">
                   Optional — you can also schedule the first session later.
                 </p>
@@ -403,32 +383,80 @@ export default function TreatmentPlanClient({
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-800">Treatment Plan</h2>
-              <span
-                className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                  plan.status === "COMPLETED"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : plan.status === "ACTIVE"
-                      ? "bg-teal-50 text-teal-700 border-teal-200"
-                      : "bg-amber-50 text-amber-700 border-amber-200"
-                }`}
-              >
-                {plan.status}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <span className="text-slate-400 block font-medium">Procedure</span>
-                <span className="text-slate-800 font-semibold">{plan.selectedProcedure}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block font-medium">Sessions</span>
-                <span className="text-slate-800 font-semibold">
-                  {plan.sessions.filter((s) => s.status !== "CANCELLED").length} / {plan.totalSessions}{" "}
-                  scheduled
+              <div className="flex items-center gap-3">
+                {plan.status !== "COMPLETED" && !isEditing && (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="text-xs font-semibold text-teal-600 hover:text-teal-800"
+                  >
+                    Edit Plan
+                  </button>
+                )}
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                    plan.status === "COMPLETED"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : plan.status === "ACTIVE"
+                        ? "bg-teal-50 text-teal-700 border-teal-200"
+                        : "bg-amber-50 text-amber-700 border-amber-200"
+                  }`}
+                >
+                  {plan.status}
                 </span>
               </div>
             </div>
+
+            {isEditing ? (
+              <div className="space-y-4 border border-slate-200 rounded-xl p-4 bg-slate-50">
+                <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Edit Plan Details</h3>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 block">Procedure</label>
+                  <select 
+                    value={selectedProcedure}
+                    onChange={(e) => setSelectedProcedure(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-400 outline-none"
+                  >
+                    {visit.procedures.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 block">Total Sessions</label>
+                  <input
+                    type="number"
+                    min={plan.sessions.filter(s => s.status !== "CANCELLED").length || 1}
+                    max={20}
+                    value={totalSessions}
+                    onChange={(e) => setTotalSessions(parseInt(e.target.value) || 1)}
+                    className="w-full h-10 px-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-400 outline-none"
+                  />
+                  <p className="text-[10px] text-slate-500">Cannot be less than currently scheduled non-cancelled sessions.</p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button onClick={() => void handleEditPlan()} disabled={editingPlan} className="h-9 px-4 bg-teal-700 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50">
+                    {editingPlan ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button onClick={() => { setIsEditing(false); setSelectedProcedure(plan.selectedProcedure); setTotalSessions(plan.totalSessions); }} disabled={editingPlan} className="h-9 px-4 bg-white border border-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-all">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="text-slate-400 block font-medium">Procedure</span>
+                  <span className="text-slate-800 font-semibold">{plan.selectedProcedure}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Sessions</span>
+                  <span className="text-slate-800 font-semibold">
+                    {plan.sessions.filter((s) => s.status !== "CANCELLED").length} / {plan.totalSessions}{" "}
+                    scheduled
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Scheduled Sessions */}
             <div>
@@ -498,36 +526,28 @@ export default function TreatmentPlanClient({
             {plan.sessions.filter((s) => s.status !== "CANCELLED").length < plan.totalSessions && (
               <div className="border-t border-slate-100 pt-4">
                 <h3 className="text-xs font-bold text-slate-700 mb-2">Add Next Session</h3>
-                {loadingDates ? (
-                  <p className="text-xs text-slate-400">Loading available dates...</p>
-                ) : availableDates.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {availableDates.slice(0, 9).map((d) => {
-                      const date = new Date(d.date);
-                      return (
-                        <button
-                          key={d.date}
-                          type="button"
-                          onClick={() => void handleAddSession(d.date)}
-                          disabled={addingSession}
-                          className="p-3 rounded-xl border border-slate-200 bg-white hover:bg-teal-50 hover:border-teal-300 text-left transition-all disabled:opacity-50"
-                        >
-                          <p className="text-xs font-bold text-slate-800">
-                            {DAY_NAMES[date.getDay()]} {date.getDate()}
-                          </p>
-                          <p className="text-[10px] text-slate-500">
-                            {date.toLocaleDateString("en-GB", { month: "short" })} ·{" "}
-                            {d.startTime}–{d.endTime}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-400 italic">
-                    No more available dates for this doctor.
-                  </p>
-                )}
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    id="newSessionDate"
+                    className="flex-1 h-11 px-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-400 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const dateInput = document.getElementById("newSessionDate") as HTMLInputElement;
+                      if (dateInput && dateInput.value) {
+                        void handleAddSession(dateInput.value);
+                      } else {
+                        setError("Please select a date first");
+                      }
+                    }}
+                    disabled={addingSession}
+                    className="h-11 px-4 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                  >
+                    {addingSession ? "Adding..." : "Add Session"}
+                  </button>
+                </div>
               </div>
             )}
 

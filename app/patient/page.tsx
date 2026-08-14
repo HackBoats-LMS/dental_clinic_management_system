@@ -19,19 +19,24 @@ export default function PatientPage() {
   const router = useRouter();
   const [opSlips, setOpSlips] = useState<OpSlip[]>([]);
   const [loadingOps, setLoadingOps] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchOPs = async () => {
+    try {
+      const res = await fetch("/api/patient/op");
+      const data = res.ok ? await res.json() : [];
+      setOpSlips(data);
+    } catch (err) {
+      console.error("Error fetching OPs:", err);
+    } finally {
+      setLoadingOps(false);
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (status === "authenticated") {
-      fetch("/api/patient/op")
-        .then((res) => (res.ok ? res.json() : []))
-        .then((data) => {
-          setOpSlips(data);
-          setLoadingOps(false);
-        })
-        .catch((err) => {
-          console.error("Error fetching OPs:", err);
-          setLoadingOps(false);
-        });
+      void fetchOPs();
     }
   }, [status]);
 
@@ -187,9 +192,21 @@ export default function PatientPage() {
 
         {/* Consultation Slips List */}
         <section className="space-y-6">
-          <h2 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#065268]/80 block px-1">
-            Your OP Slips & Tokens
-          </h2>
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#065268]/80 block">
+              Your OP Slips & Tokens
+            </h2>
+            <button
+              onClick={() => {
+                setIsRefreshing(true);
+                void fetchOPs();
+              }}
+              disabled={isRefreshing}
+              className="text-xs font-bold text-[#065268] hover:text-[#043e4f] bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
+            >
+              {isRefreshing ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
 
           <div className="bg-[#FAF9F6] border border-slate-100/50 rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 shadow-sm">
             {loadingOps ? (

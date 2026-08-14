@@ -50,22 +50,31 @@ export default function QueueView() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchQueue();
 
-    const eventSource = new EventSource("/api/request/stream");
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data && data.type === "QUEUE_UPDATE") {
-          void fetchQueue();
+    let eventSource: EventSource;
+
+    const connectSSE = () => {
+      eventSource = new EventSource("/api/request/stream");
+      eventSource.onmessage = (event) => {
+        try {
+          if (event.data === "ping" || event.data === "connected") return;
+          const data = JSON.parse(event.data);
+          if (data && data.type === "QUEUE_UPDATE") {
+            void fetchQueue();
+          }
+        } catch {
+          // Ignore parse errors for non-JSON events
         }
-      } catch {
-        // Ignore initial connection messages
-      }
+      };
+      eventSource.onerror = () => {
+        eventSource.close();
+        setTimeout(connectSSE, 5000); // Reconnect after 5s
+      };
     };
-    eventSource.onerror = () => {
-      // EventSource reconnects automatically
-    };
+
+    connectSSE();
+
     return () => {
-      eventSource.close();
+      if (eventSource) eventSource.close();
     };
   }, []);
 

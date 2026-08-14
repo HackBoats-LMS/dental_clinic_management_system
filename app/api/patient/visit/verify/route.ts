@@ -64,10 +64,18 @@ export async function POST(req: NextRequest) {
     // Find the visit
     const visit = await prisma.visit.findUnique({
       where: { visitId },
+      include: { doctor: true }
     });
 
     if (!visit || visit.patientId !== patientId) {
       return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+    }
+
+    if (visit.doctor?.isQueuePaused) {
+      return NextResponse.json(
+        { error: `Dr. ${visit.doctor.name} has temporarily paused taking new patients. Please try again later.` }, 
+        { status: 400 }
+      );
     }
 
     if (visit.isVerified) {
