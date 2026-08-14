@@ -19,14 +19,16 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   const role = session.user?.role;
 
   const navLinks = [
-    { name: "Summary", href: "/admin/summary", show: role === "admin" },
-    { name: "Recordings", href: "/admin/recordings", show: role === "admin" },
+    { name: "Call Summaries & Recordings", href: "/admin/recordings", show: role === "admin" },
     { name: "Control Panel", href: "/admin/control-panel", show: role === "admin" },
     { name: "Today's Call List", href: "/receptionist/todays-calls", show: role === "receptionist" },
     { name: "Add Calls", href: "/receptionist/add-calls", show: role === "receptionist" },
     { name: "OP Requests", href: "/receptionist/op-requests", show: role === "receptionist" },
     { name: "Token Queue", href: "/receptionist/queue", show: role === "receptionist" || role === "admin" },
     { name: "Walk-in & OP", href: "/receptionist/walk-in", show: role === "receptionist" },
+    { name: "Post-Consultation", href: "/receptionist/completed-visits", show: role === "receptionist" },
+    { name: "Active Plans", href: "/receptionist/active-plans", show: role === "receptionist" },
+    { name: "Doctor Dashboards", href: "/receptionist/doctor-dashboard", show: role === "receptionist" || role === "admin" },
     { name: "Dashboard", href: "/patient", show: role === "patient" || !role },
     { name: "Create OP", href: "/patient/create/op", show: role === "patient" || !role },
     { name: "Family Members", href: "/patient/family", show: role === "patient" || !role },

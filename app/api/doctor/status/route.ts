@@ -3,14 +3,23 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "doctor") {
+    if (!session || !["doctor", "receptionist", "admin"].includes(session.user.role as string)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const doctorId = session.user.id as string;
+    let doctorId = session.user.id as string;
+    if (session.user.role !== "doctor") {
+      const url = new URL(req.url);
+      const requestedDoctorId = url.searchParams.get("doctorId");
+      if (!requestedDoctorId) {
+        return NextResponse.json({ error: "doctorId is required for non-doctors" }, { status: 400 });
+      }
+      doctorId = requestedDoctorId;
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -42,6 +51,14 @@ export async function GET() {
             emergencyContact: true,
             previousDentalHistory: true,
             medicalConditions: true,
+            visits: {
+              where: { treatmentPlan: { status: { in: ["PENDING", "ACTIVE"] } } },
+              include: {
+                treatmentPlan: {
+                  include: { sessions: true }
+                }
+              }
+            }
           },
         },
         familyMember: {
@@ -55,18 +72,37 @@ export async function GET() {
             previousDentalHistory: true,
             medicalConditions: true,
             relation: true,
+            visits: {
+              where: { treatmentPlan: { status: { in: ["PENDING", "ACTIVE"] } } },
+              include: {
+                treatmentPlan: {
+                  include: { sessions: true }
+                }
+              }
+            }
           },
         },
       },
       orderBy: { tokenNumber: "asc" },
     });
 
-    const nextVisit = visits.find((v) => v.tokenNumber > doctor.currentToken);
+    const currentVisit = visits.find((v) => v.consultationStatus === "IN_CONSULTATION");
+    const waitingVisits = visits.filter((v) => v.consultationStatus === "WAITING");
+
+    const effectiveCurrent = currentVisit || (waitingVisits.length > 0 ? waitingVisits[0] : null);
+    const dynamicCurrentToken = effectiveCurrent ? effectiveCurrent.tokenNumber : 0;
+
+    const effectiveNext = currentVisit
+      ? (waitingVisits.length > 0 ? waitingVisits[0].tokenNumber : null)
+      : (waitingVisits.length > 1 ? waitingVisits[1].tokenNumber : null);
+
+    // Override the stale DB value with today's dynamically calculated token
+    doctor.currentToken = dynamicCurrentToken;
 
     return NextResponse.json({
       doctor,
       visits,
-      nextToken: nextVisit ? nextVisit.tokenNumber : null,
+      nextToken: effectiveNext,
     });
   } catch (error) {
     console.error("Error fetching doctor dashboard data:", error);
@@ -77,12 +113,20 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "doctor") {
+    if (!session || !["doctor", "receptionist", "admin"].includes(session.user.role as string)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const doctorId = session.user.id as string;
     const body = await req.json();
+    let doctorId = session.user.id as string;
+    
+    if (session.user.role !== "doctor") {
+      if (!body.doctorId) {
+        return NextResponse.json({ error: "doctorId is required for non-doctors" }, { status: 400 });
+      }
+      doctorId = body.doctorId;
+    }
+
     const { isPresent, isQueuePaused } = body;
 
     if (isPresent === undefined && isQueuePaused === undefined) {

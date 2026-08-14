@@ -7,11 +7,10 @@ import { NextRequest, NextResponse } from "next/server";
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "doctor") {
+    if (!session || !["doctor", "receptionist", "admin"].includes(session.user.role as string)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const doctorId = session.user.id as string;
     const body = await req.json();
     const { visitId, action } = body as { visitId: string; action: "START" | "PAUSE" | "COMPLETE" };
 
@@ -20,8 +19,12 @@ export async function PATCH(req: NextRequest) {
     }
 
     const visit = await prisma.visit.findUnique({ where: { visitId } });
-    if (!visit || visit.doctorId !== doctorId) {
+    if (!visit) {
       return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+    }
+
+    if (session.user.role === "doctor" && visit.doctorId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden: Not your visit" }, { status: 403 });
     }
 
     const currentStatus = visit.consultationStatus || "WAITING";
@@ -52,7 +55,7 @@ export async function PATCH(req: NextRequest) {
 
     broadcast({
       type: "QUEUE_UPDATE",
-      doctorId,
+      doctorId: visit.doctorId,
     });
 
     return NextResponse.json({ visit: updated });

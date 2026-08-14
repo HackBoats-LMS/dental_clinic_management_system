@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { name, email, phone, role } = await req.json();
+  const { name, email: rawEmail, phone, role } = await req.json();
+  const email = rawEmail?.toLowerCase();
 
   if (!name || !email || !role) {
     return NextResponse.json({ error: "Name, email, and role are required" }, { status: 400 });

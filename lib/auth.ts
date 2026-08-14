@@ -15,8 +15,9 @@ export const authOptions: NextAuthOptions = {
     // 🔐 SIGN IN
     async signIn({ user, account }) {
       if (account?.provider === "google") {
-        const email = user.email;
-        if (!email) return false;
+        const rawEmail = user.email;
+        if (!rawEmail) return false;
+        const email = rawEmail.toLowerCase();
 
         // check existing roles
         const patient = await prisma.patient.findUnique({ where: { email } });
@@ -47,7 +48,7 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user, trigger }) {
       if (user?.email) {
-        const email = user.email;
+        const email = user.email.toLowerCase();
         token.email = email;
 
         const patient = await prisma.patient.findUnique({ where: { email } });

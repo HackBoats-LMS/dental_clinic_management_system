@@ -26,11 +26,19 @@ export async function POST(req: NextRequest) {
           orderBy: { createdAt: "desc" },
           take: 1,
         },
+        doctor: true,
       },
     });
 
     if (!op || op.patientId !== patientId) {
       return NextResponse.json({ error: "Invalid OP registration" }, { status: 400 });
+    }
+
+    if (op.doctor?.isQueuePaused) {
+      return NextResponse.json(
+        { error: `Dr. ${op.doctor.name} has temporarily paused taking new patients. Please try again later.` }, 
+        { status: 400 }
+      );
     }
 
     if (op.expiresAt < new Date()) {

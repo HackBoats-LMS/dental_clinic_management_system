@@ -65,10 +65,17 @@ export async function GET() {
       })
     );
 
-    return NextResponse.json({
-      dailyCode: getDailyCode(),
-      doctors: boardData,
-    });
+    return NextResponse.json(
+      {
+        dailyCode: getDailyCode(),
+        doctors: boardData,
+      },
+      {
+        headers: {
+          "Cache-Control": "s-maxage=2, stale-while-revalidate=59"
+        }
+      }
+    );
   } catch (error) {
     console.error("Error fetching board data:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

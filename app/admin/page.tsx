@@ -9,6 +9,6 @@ export default async function AdminDashboard() {
     redirect("/api/auth/signin");
   }
   
-  redirect("/admin/summary");
+  redirect("/admin/recordings");
 }
 

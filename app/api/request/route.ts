@@ -23,16 +23,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const op = await prisma.op.findUnique({ where: { opId } });
+    const [op, member] = await Promise.all([
+      prisma.op.findUnique({ where: { opId }, select: { patientId: true } }),
+      familyMemberId ? prisma.familyMembers.findUnique({ where: { fId: familyMemberId }, select: { patientId: true } }) : Promise.resolve(null)
+    ]);
+
     if (!op || op.patientId !== patientId) {
       return NextResponse.json({ error: "Invalid OP registration" }, { status: 400 });
     }
 
-    if (familyMemberId) {
-      const member = await prisma.familyMembers.findUnique({ where: { fId: familyMemberId } });
-      if (!member || member.patientId !== patientId) {
-        return NextResponse.json({ error: "Invalid family member" }, { status: 400 });
-      }
+    if (familyMemberId && (!member || member.patientId !== patientId)) {
+      return NextResponse.json({ error: "Invalid family member" }, { status: 400 });
     }
 
     const newRequest = await prisma.request.create({

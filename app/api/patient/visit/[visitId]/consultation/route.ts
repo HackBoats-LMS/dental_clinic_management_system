@@ -10,7 +10,7 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "doctor") {
+    if (!session || !["doctor", "receptionist", "admin"].includes(session.user.role as string)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -29,11 +29,11 @@ export async function PATCH(
       );
     }
 
-    const existingVisit = await prisma.visit.findUnique({ where: { visitId } });
+    const existingVisit = await prisma.visit.findUnique({ where: { visitId }, select: { doctorId: true } });
     if (!existingVisit) {
       return NextResponse.json({ error: "Visit not found" }, { status: 404 });
     }
-    if (existingVisit.doctorId !== session.user.id) {
+    if (session.user.role === "doctor" && existingVisit.doctorId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

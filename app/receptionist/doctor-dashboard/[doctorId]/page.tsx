@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 interface Visit {
   visitId: string;
@@ -61,6 +61,8 @@ interface Doctor {
 export default function DoctorDashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const params = useParams();
+  const doctorId = params.doctorId as string;
 
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -87,7 +89,7 @@ export default function DoctorDashboardPage() {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
     } else if (status === "authenticated") {
-      if (session?.user?.role !== "doctor") {
+      if (session?.user?.role !== "receptionist" && session?.user?.role !== "admin") {
         router.push("/");
       }
     }
@@ -100,7 +102,7 @@ export default function DoctorDashboardPage() {
     const load = async () => {
       try {
         const [dashRes, probsRes, procsRes] = await Promise.all([
-          fetch("/api/doctor/status", { signal: controller.signal }),
+          fetch(`/api/doctor/status?doctorId=${doctorId}`, { signal: controller.signal }),
           fetch("/api/problems", { signal: controller.signal }),
           fetch("/api/procedures", { signal: controller.signal }),
         ]);
@@ -188,7 +190,7 @@ export default function DoctorDashboardPage() {
 
   const refreshData = async () => {
     try {
-      const res = await fetch("/api/doctor/status");
+      const res = await fetch(`/api/doctor/status?doctorId=${doctorId}`);
       if (res.ok) {
         const data = await res.json();
         setDoctor(data.doctor);
@@ -348,7 +350,7 @@ export default function DoctorDashboardPage() {
       const res = await fetch("/api/doctor/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isPresent: !doctor.isPresent }),
+        body: JSON.stringify({ doctorId, isPresent: !doctor.isPresent }),
       });
       if (res.ok) await refreshData();
     } catch (err) {
@@ -362,7 +364,7 @@ export default function DoctorDashboardPage() {
       const res = await fetch("/api/doctor/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isQueuePaused: !doctor.isQueuePaused }),
+        body: JSON.stringify({ doctorId, isQueuePaused: !doctor.isQueuePaused }),
       });
       if (res.ok) await refreshData();
     } catch (err) {
@@ -431,16 +433,10 @@ export default function DoctorDashboardPage() {
 
           <div className="flex items-center gap-4">
             <button
-              onClick={() => router.push("/doctor/schedule")}
+              onClick={() => router.push("/receptionist/doctor-dashboard")}
               className="hidden sm:inline-flex h-9 px-3.5 items-center rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition-colors"
             >
-              📅 My Schedule
-            </button>
-            <button
-              onClick={() => router.push("/doctor/treatment-plans")}
-              className="hidden sm:inline-flex h-9 px-3.5 items-center rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition-colors"
-            >
-              📋 Treatment Plans
+              ⬅ Back to Doctors
             </button>
             <button
               onClick={() => router.push("/board")}
