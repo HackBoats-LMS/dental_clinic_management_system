@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useDeferredValue } from "react";
 import { useRouter } from "next/navigation";
+import EnhancedAudioPlayer from "@/app/components/EnhancedAudioPlayer";
 
 type Recording = {
   recordId: string;
@@ -344,40 +345,17 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
                           {rec.driveLink ? (
                             <div className="flex items-center gap-2">
                               {activeAudioId === rec.recordId ? (
-                                <audio 
-                                  controls 
-                                  autoPlay 
-                                  crossOrigin="anonymous"
-                                  className="h-9 w-48 sm:w-56 outline-none rounded shadow-sm"
-                                  ref={(el) => { 
-                                    if (el && !el.dataset.boosted) {
-                                      el.dataset.boosted = "true";
-                                      el.volume = 1.0;
-                                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                                      if (!isMobile) {
-                                        try {
-                                          const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-                                          const ctx = new AudioContext();
-                                          const src = ctx.createMediaElementSource(el);
-                                          const gain = ctx.createGain();
-                                          gain.gain.value = 3.0; // 300% volume boost
-                                          src.connect(gain);
-                                          gain.connect(ctx.destination);
-                                          el.addEventListener('play', () => { if (ctx.state === 'suspended') ctx.resume(); });
-                                        } catch (e) { console.error("Audio boost failed", e); }
-                                      }
-                                    } 
-                                  }}
-                                >
-                                  <source src={`/api/recordings/${rec.recordId}/audio`} />
-                                  <source src={getAudioStreamUrl(rec.driveLink) || ''} />
-                                  <source src={getDownloadLink(rec.driveLink) || ''} />
-                                </audio>
+                                <EnhancedAudioPlayer
+                                  recordingId={rec.recordId}
+                                  driveLink={rec.driveLink}
+                                  compact={true}
+                                  autoPlay={true}
+                                />
                               ) : (
                                 <button
                                   onClick={() => setActiveAudioId(rec.recordId)}
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all shadow-sm group-hover:bg-blue-100"
-                                  title="Click to load and play audio"
+                                  title="Click to load and play audio with booster"
                                 >
                                   <span>▶</span> Listen
                                 </button>
@@ -529,37 +507,13 @@ export default function RecordingsTable({ recordings, isDevelopment, viewMode = 
                     )}
                   </div>
                   {selectedRecording.driveLink ? (
-                    <div className="space-y-2">
-                      <audio 
-                        controls 
-                        crossOrigin="anonymous"
-                        className="w-full h-12 outline-none rounded-xl bg-slate-100 shadow-inner" 
-                        preload="metadata"
-                        ref={(el) => { 
-                          if (el && !el.dataset.boosted) {
-                            el.dataset.boosted = "true";
-                            el.volume = 1.0;
-                            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                            if (!isMobile) {
-                              try {
-                                const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-                                const ctx = new AudioContext();
-                                const src = ctx.createMediaElementSource(el);
-                                const gain = ctx.createGain();
-                                gain.gain.value = 3.0; // 300% volume boost
-                                src.connect(gain);
-                                gain.connect(ctx.destination);
-                                el.addEventListener('play', () => { if (ctx.state === 'suspended') ctx.resume(); });
-                              } catch (e) { console.error("Audio boost failed", e); }
-                            }
-                          } 
-                        }}
-                      >
-                        <source src={`/api/recordings/${selectedRecording.recordId}/audio`} />
-                        <source src={getAudioStreamUrl(selectedRecording.driveLink) || ''} />
-                        <source src={getDownloadLink(selectedRecording.driveLink) || ''} />
-                        Your browser does not support the audio element.
-                      </audio>
+                    <div className="space-y-3">
+                      <EnhancedAudioPlayer
+                        recordingId={selectedRecording.recordId}
+                        driveLink={selectedRecording.driveLink}
+                        compact={false}
+                        autoPlay={true}
+                      />
 
                       {extractDriveId(selectedRecording.driveLink) && (
                         <details className="text-xs text-slate-500 mt-1">

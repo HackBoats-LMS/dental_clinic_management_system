@@ -70,16 +70,37 @@ export async function GET(
     }
 
     const contentType = driveRes.headers.get('content-type') || 'audio/mp4';
+    const contentLength = driveRes.headers.get('content-length');
 
-    return new NextResponse(driveRes.body, {
-      headers: {
-        'Content-Type': contentType.includes('text/html') ? 'audio/mp4' : contentType,
-        'Content-Disposition': 'inline',
-        'Cache-Control': 'private, no-store',
-      },
-    });
+    const headers: Record<string, string> = {
+      'Content-Type': contentType.includes('text/html') ? 'audio/mp4' : contentType,
+      'Content-Disposition': 'inline',
+      'Cache-Control': 'private, no-store',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': 'Range, Content-Type, Authorization',
+      'Accept-Ranges': 'bytes',
+    };
+
+    if (contentLength) {
+      headers['Content-Length'] = contentLength;
+    }
+
+    return new NextResponse(driveRes.body, { headers });
   } catch (error) {
     console.error('Audio proxy error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': 'Range, Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
 }
