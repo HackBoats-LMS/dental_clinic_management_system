@@ -34,22 +34,27 @@ export async function GET(
       return NextResponse.redirect(recording.driveLink);
     }
 
+    // Forward client range request if present (vital for iOS Safari and mobile streaming)
+    const clientRange = request.headers.get('range');
+    const forwardHeaders: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    };
+    if (clientRange) {
+      forwardHeaders['Range'] = clientRange;
+    }
+
     // Try fetching direct audio stream from Google Drive's usercontent server
     const targetUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
     
     let driveRes = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
+      headers: forwardHeaders,
     });
 
     // Fallback if drive.usercontent fails
     if (!driveRes.ok || driveRes.headers.get('content-type')?.includes('text/html')) {
       const fallbackUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
       const fallbackRes = await fetch(fallbackUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
+        headers: forwardHeaders,
       });
       if (fallbackRes.ok && !fallbackRes.headers.get('content-type')?.includes('text/html')) {
         driveRes = fallbackRes;
@@ -59,7 +64,9 @@ export async function GET(
     // Secondary fallback
     if (!driveRes.ok || driveRes.headers.get('content-type')?.includes('text/html')) {
       const viewUrl = `https://docs.google.com/uc?export=open&id=${fileId}`;
-      const viewRes = await fetch(viewUrl);
+      const viewRes = await fetch(viewUrl, {
+        headers: forwardHeaders,
+      });
       if (viewRes.ok && !viewRes.headers.get('content-type')?.includes('text/html')) {
         driveRes = viewRes;
       }
@@ -71,6 +78,7 @@ export async function GET(
 
     const contentType = driveRes.headers.get('content-type') || 'audio/mp4';
     const contentLength = driveRes.headers.get('content-length');
+    const contentRange = driveRes.headers.get('content-range');
 
     const headers: Record<string, string> = {
       'Content-Type': contentType.includes('text/html') ? 'audio/mp4' : contentType,
@@ -79,14 +87,28 @@ export async function GET(
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
       'Access-Control-Allow-Headers': 'Range, Content-Type, Authorization',
+      'Access-Control-Expose-Headers': 'Content-Range, Content-Length, Accept-Ranges',
       'Accept-Ranges': 'bytes',
     };
 
     if (contentLength) {
       headers['Content-Length'] = contentLength;
     }
+    if (contentRange) {
+      headers['Content-Range'] = contentRange;
+    }
 
-    return new NextResponse(driveRes.body, { headers });
+    const responseStatus =
+      driveRes.status === 206 || (clientRange && contentRange)
+        ? 206
+        : driveRes.status === 200
+        ? 200
+        : driveRes.status;
+
+    return new NextResponse(driveRes.body, {
+      status: responseStatus,
+      headers,
+    });
   } catch (error) {
     console.error('Audio proxy error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
